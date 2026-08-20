@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface-offwhite font-sans text-[15px] leading-relaxed text-ink-body antialiased;
+  }
+
+  /* Headings inherit their container colour so they stay legible on the brand
+     gradients; light surfaces set text-ink explicitly. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    @apply font-semibold;
+    color: inherit;
+    line-height: 1.4;
+  }
+
+  /* Poppins caps out at 600 for CloudFuze brand compliance. */
+  strong,
+  b {
+    font-weight: 600;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-black/15;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-black/25;
+  }
+}
+
+@layer components {
+  .cf-card {
+    @apply rounded-card border border-surface-line bg-white shadow-card;
+  }
+
+  .cf-label {
+    @apply mb-1.5 block text-[13px] font-medium text-ink-body;
+  }
+
+  .cf-input {
+    @apply w-full rounded border border-surface-line bg-white px-3 py-2.5 text-[14px] text-ink-body
+      placeholder:text-ink-muted/70 transition focus:border-brand focus:outline-none
+      focus:ring-2 focus:ring-brand/15 disabled:cursor-not-allowed disabled:bg-surface-offwhite;
+  }
+
+  .cf-input-error {
+    @apply border-accent-red focus:border-accent-red focus:ring-accent-red/15;
+  }
+
+  .cf-th {
+    @apply whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted;
+  }
+
+  .cf-td {
+    @apply px-4 py-3.5 align-middle text-[13.5px] text-ink-body;
+  }
+
+  .cf-row {
+    @apply border-t border-surface-line transition-colors hover:bg-brand-tint/40;
+  }
+
+  .cf-skeleton {
+    @apply relative overflow-hidden rounded bg-surface-line/70;
+  }
+
+  .cf-skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/70 to-transparent;
+    animation: shimmer 1.4s infinite;
+  }
+
+  .cf-scroll-x {
+    @apply overflow-x-auto;
+    scrollbar-width: thin;
+  }
+}

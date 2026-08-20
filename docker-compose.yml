@@ -1,0 +1,38 @@
+version: '3.9'
+
+# Local development dependencies for the CloudFuze HR Onboarding Portal.
+# Only PostgreSQL (and an optional mail catcher) run here - the backend and
+# frontend are started from their own directories during development.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cloudfuze-onboarding-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cloudfuze_onboarding}
+      POSTGRES_USER: ${POSTGRES_USER:-cloudfuze}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloudfuze}
+      TZ: UTC
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - onboarding-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-cloudfuze} -d ${POSTGRES_DB:-cloudfuze_onboarding}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Optional: catches invitation emails when EMAIL_PROVIDER=smtp locally.
+  # UI at http://localhost:8025, SMTP on 1025.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: cloudfuze-onboarding-mail
+    restart: unless-stopped
+    profiles: ['mail']
+    ports:
+      - '8025:8025'
+      - '1025:1025'
+
+volumes:
+  onboarding-db-data:
