@@ -30,8 +30,8 @@ describe('HrLayout sidebar', () => {
 
   it('starts expanded with labels and the signed-in user', () => {
     renderLayout()
-    expect(screen.getByText('Document Requests')).toBeInTheDocument()
-    expect(screen.getByText('Verify and reject uploads')).toBeInTheDocument()
+    expect(screen.getByText('Offers & Bonds')).toBeInTheDocument()
+    expect(screen.getByText('Publish offers, track signatures')).toBeInTheDocument()
     expect(screen.getByText('CloudFuze HR Admin')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse navigation' })).toBeInTheDocument()
   })
@@ -43,8 +43,8 @@ describe('HrLayout sidebar', () => {
     await user.click(screen.getByRole('button', { name: 'Collapse navigation' }))
 
     // Labels and hints go, but every destination is still there and titled.
-    expect(screen.queryByText('Verify and reject uploads')).not.toBeInTheDocument()
-    expect(screen.getByTitle('Document Requests')).toBeInTheDocument()
+    expect(screen.queryByText('Publish offers, track signatures')).not.toBeInTheDocument()
+    expect(screen.getByTitle('Offers & Bonds')).toBeInTheDocument()
     expect(screen.getByTitle('Log out')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
     // The page itself keeps rendering while the rail animates.
@@ -60,7 +60,7 @@ describe('HrLayout sidebar', () => {
 
     renderLayout()
     expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
-    expect(screen.queryByText('Verify and reject uploads')).not.toBeInTheDocument()
+    expect(screen.queryByText('Publish offers, track signatures')).not.toBeInTheDocument()
   })
 
   it('expands again from the rail', async () => {
@@ -69,7 +69,7 @@ describe('HrLayout sidebar', () => {
     renderLayout()
 
     await user.click(screen.getByRole('button', { name: 'Expand navigation' }))
-    expect(screen.getByText('Verify and reject uploads')).toBeInTheDocument()
+    expect(screen.getByText('Publish offers, track signatures')).toBeInTheDocument()
     expect(window.localStorage.getItem('cf_hr_sidebar_collapsed')).toBe('0')
   })
 })

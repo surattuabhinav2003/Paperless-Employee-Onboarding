@@ -8,7 +8,7 @@ export function ProgressBar({ value = 0, total = 0, tone = 'brand', showLabel = 
   return (
     <div className={className}>
       <div className="flex items-center gap-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-line">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-line/90">
           <div
             className={`h-full rounded-full transition-all duration-500 ${tones[tone] || tones.brand}`}
             style={{ width: `${percent}%` }}

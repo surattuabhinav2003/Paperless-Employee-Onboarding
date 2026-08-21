@@ -4,7 +4,6 @@ import { PortalLayout } from '../layouts/PortalLayout'
 import { CandidateDetailPage } from '../pages/hr/CandidateDetailPage'
 import { CandidatesPage } from '../pages/hr/CandidatesPage'
 import { DashboardPage } from '../pages/hr/DashboardPage'
-import { DocumentsPage } from '../pages/hr/DocumentsPage'
 import { LoginPage } from '../pages/hr/LoginPage'
 import { OffersBondsPage } from '../pages/hr/OffersBondsPage'
 import { PortalBondPage } from '../pages/portal/PortalBondPage'
@@ -33,7 +32,6 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/candidates" element={<CandidatesPage />} />
           <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
           <Route path="/offers-bonds" element={<OffersBondsPage />} />
         </Route>
       </Route>

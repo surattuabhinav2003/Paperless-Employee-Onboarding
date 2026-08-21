@@ -37,12 +37,6 @@ const NAV_ITEMS = [
     icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm9 14v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   },
   {
-    to: '/documents',
-    label: 'Document Requests',
-    hint: 'Verify and reject uploads',
-    icon: 'M14 3v5h5M6 3h9l5 5v13H6V3Zm3 9h6M9 16h6',
-  },
-  {
     to: '/offers-bonds',
     label: 'Offers & Bonds',
     hint: 'Publish offers, track signatures',

@@ -13,7 +13,13 @@ import { StatusPill } from '../../components/ui/StatusPill'
 import { useToast } from '../../context/ToastContext'
 import { hrService } from '../../services/hrService'
 import { formatDateTime, initialsOf } from '../../utils/format'
-import { bondStatusMeta, offerStatusMeta, stageMeta } from '../../utils/status'
+import {
+  awaitingReviewCount,
+  bondStatusMeta,
+  documentProgressMeta,
+  offerStatusMeta,
+  pipelineStatusMeta,
+} from '../../utils/status'
 
 const TABS = [
   { key: 'details', label: 'Details' },
@@ -78,9 +84,11 @@ export function CandidateDetailPage() {
   }
 
   const candidate = detail.candidate
-  const stage = stageMeta(candidate.stage)
+  const status = pipelineStatusMeta(candidate)
   const offer = offerStatusMeta(candidate.offerStatus)
   const bond = bondStatusMeta(candidate.bondStatus)
+  const awaitingReview = awaitingReviewCount(candidate)
+  const docs = documentProgressMeta(candidate)
 
   return (
     <>
@@ -106,7 +114,7 @@ export function CandidateDetailPage() {
           <div className="min-w-[240px] flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">{candidate.name}</h1>
-              <StatusPill label={stage.label} tone={stage.tone} />
+              <StatusPill label={status.label} tone={status.tone} />
             </div>
             <p className="mt-1 text-[13.5px] text-ink-muted">
               {candidate.email} &middot; {candidate.role} &middot; {candidate.department}
@@ -124,19 +132,13 @@ export function CandidateDetailPage() {
 
           <dl className="grid w-full max-w-[300px] gap-2.5 text-[12.5px]">
             <div>
-              <dt className="mb-1 text-ink-muted">Documents verified</dt>
+              <dt className="mb-1 flex items-center justify-between gap-3 text-ink-muted">
+                <span>Documents uploaded</span>
+                <span className="text-[11.5px]">{docs.verified} verified</span>
+              </dt>
               <dd>
-                <ProgressBar
-                  value={candidate.documentsVerified}
-                  total={candidate.documentsRequired}
-                  tone={
-                    candidate.documentsVerified === candidate.documentsRequired
-                      ? 'green'
-                      : candidate.documentsRejected > 0
-                        ? 'amber'
-                        : 'brand'
-                  }
-                />
+                <ProgressBar value={docs.uploaded} total={docs.total} tone={docs.tone} />
+                <span className="mt-1 block text-[11.5px] text-ink-muted">{docs.caption}</span>
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
@@ -151,6 +153,36 @@ export function CandidateDetailPage() {
         </div>
       </section>
 
+      {awaitingReview > 0 && (
+        <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-card
+          border border-brand/30 bg-brand-tint/60 px-5 py-3.5">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full
+              bg-brand text-white">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor"
+                strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-[13.5px] font-semibold text-ink">
+                {awaitingReview === 1
+                  ? '1 document is waiting for your review'
+                  : `${awaitingReview} documents are waiting for your review`}
+              </p>
+              <p className="mt-0.5 text-[12.5px] text-ink-muted">
+                {candidate.submittedForReviewAt
+                  ? 'The candidate has submitted their pack. Verify or reject each document to move them on.'
+                  : 'The candidate is still finishing their pack, but these are ready to look at.'}
+              </p>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => setTab('documents')}>
+            Review documents
+          </Button>
+        </section>
+      )}
+
       <nav className="mb-5 flex flex-wrap gap-1 border-b border-surface-line">
         {TABS.map((item) => (
           <button
@@ -164,6 +196,11 @@ export function CandidateDetailPage() {
             }`}
           >
             {item.label}
+            {item.key === 'documents' && awaitingReview > 0 && (
+              <span className="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {awaitingReview}
+              </span>
+            )}
           </button>
         ))}
       </nav>

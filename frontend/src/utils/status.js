@@ -4,7 +4,7 @@
  */
 export const STAGE_META = {
   docs_pending: { label: 'Documents Pending', tone: 'amber' },
-  docs_approved: { label: 'Documents Approved', tone: 'blue' },
+  docs_approved: { label: 'Verified', tone: 'green' },
   offer_accepted: { label: 'Offer Accepted', tone: 'teal' },
   bond_signed: { label: 'Onboarding Complete', tone: 'green' },
 }
@@ -40,6 +40,60 @@ export const TONE_CLASSES = {
 
 export function stageMeta(stage) {
   return STAGE_META[stage] || { label: stage || 'Unknown', tone: 'grey' }
+}
+
+/**
+ * What HR needs to know at a glance, which is finer than the backend stage:
+ * while a candidate sits in docs_pending they may still be uploading, be waiting
+ * on a review, or have something sent back. Purely presentational - the stage
+ * itself is still what gates the workflow.
+ */
+export function pipelineStatusMeta(candidate) {
+  if (!candidate) return { label: 'Unknown', tone: 'grey' }
+
+  if (candidate.stage !== 'docs_pending') {
+    return stageMeta(candidate.stage)
+  }
+  if (candidate.documentsRejected > 0) {
+    return { label: 'Re-upload needed', tone: 'red' }
+  }
+  const everythingUploaded = candidate.documentsMissing === 0 && candidate.documentsRequired > 0
+  if (candidate.submittedForReviewAt || (everythingUploaded && candidate.documentsSubmitted > 0)) {
+    return { label: 'Needs review', tone: 'blue' }
+  }
+  return { label: 'Upload pending', tone: 'amber' }
+}
+
+/**
+ * The documents bar tracks what the candidate has actually provided, so it moves
+ * the moment they upload rather than waiting on HR. What is still outstanding -
+ * for either side - is spelled out in the caption.
+ */
+export function documentProgressMeta(candidate) {
+  const total = candidate?.documentsRequired ?? 0
+  const missing = candidate?.documentsMissing ?? 0
+  const submitted = candidate?.documentsSubmitted ?? 0
+  const rejected = candidate?.documentsRejected ?? 0
+  const verified = candidate?.documentsVerified ?? 0
+  const uploaded = Math.max(0, total - missing)
+
+  const parts = []
+  if (rejected > 0) parts.push(`${rejected} rejected`)
+  if (submitted > 0) parts.push(`${submitted} to review`)
+  if (missing > 0) parts.push(`${missing} awaiting upload`)
+
+  return {
+    uploaded,
+    total,
+    verified,
+    caption: parts.length ? parts.join(' · ') : total > 0 ? 'All verified' : 'None requested',
+    tone: total > 0 && verified === total ? 'green' : rejected > 0 ? 'amber' : 'brand',
+  }
+}
+
+/** Documents sitting in HR's queue for this candidate. */
+export function awaitingReviewCount(candidate) {
+  return candidate?.stage === 'docs_pending' ? candidate.documentsSubmitted || 0 : 0
 }
 
 export function documentStatusMeta(status) {

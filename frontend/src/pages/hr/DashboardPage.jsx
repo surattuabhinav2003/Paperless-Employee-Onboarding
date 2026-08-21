@@ -71,7 +71,7 @@ export function DashboardPage() {
             <StatCard
               label="Awaiting review"
               value={data?.awaitingReview ?? 0}
-              hint="Submitted documents needing an HR decision"
+              hint="Open a candidate to verify or reject their documents"
               icon="review"
               tone="blue"
               loading={stats.loading && !data}
