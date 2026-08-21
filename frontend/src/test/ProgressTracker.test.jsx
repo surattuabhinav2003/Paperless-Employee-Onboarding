@@ -9,11 +9,11 @@ const CURRENT_DOCUMENTS = {
   statusText: '2 documents still to upload',
 }
 
-const COMPLETED_BOND = {
-  key: 'bond',
-  title: 'Bond Signing',
+const COMPLETED_OFFER = {
+  key: 'offer',
+  title: 'Offer Letter',
   state: 'completed',
-  statusText: 'Signed',
+  statusText: 'Accepted',
 }
 
 describe('ProgressTracker', () => {
@@ -28,14 +28,13 @@ describe('ProgressTracker', () => {
     // The backend only sends the current step, so nothing else can leak into the UI.
     render(<ProgressTracker steps={[CURRENT_DOCUMENTS]} />)
     expect(screen.queryByText('Offer Letter')).not.toBeInTheDocument()
-    expect(screen.queryByText('Bond Signing')).not.toBeInTheDocument()
     expect(screen.queryByText(/Available after/)).not.toBeInTheDocument()
   })
 
   it('marks a finished step as completed rather than current', () => {
-    render(<ProgressTracker steps={[COMPLETED_BOND]} />)
-    expect(screen.getByText('Bond Signing')).toBeInTheDocument()
-    expect(screen.getByText('Signed')).toBeInTheDocument()
+    render(<ProgressTracker steps={[COMPLETED_OFFER]} />)
+    expect(screen.getByText('Offer Letter')).toBeInTheDocument()
+    expect(screen.getByText('Accepted')).toBeInTheDocument()
     expect(screen.queryByText('Your step now')).not.toBeInTheDocument()
   })
 

@@ -22,7 +22,7 @@ export function CopyField({ value, label, className = '' }) {
           readOnly
           value={value || ''}
           onFocus={(event) => event.target.select()}
-          className="cf-input flex-1 bg-surface-offwhite font-mono text-[12px]"
+          className="cf-input flex-1 bg-surface-canvas font-mono text-[12px]"
         />
         <button
           type="button"

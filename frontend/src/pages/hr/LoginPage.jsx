@@ -1,11 +1,31 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Button } from '../../components/ui/Button'
-import { Field, TextInput } from '../../components/ui/Field'
-import { Logo } from '../../components/ui/Logo'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import '../../styles/login.css'
 
+const STEPS = [
+  {
+    n: '01',
+    title: 'Details & documents',
+    body: 'The candidate fills in their record and uploads exactly what you asked for.',
+  },
+  {
+    n: '02',
+    title: 'Offer letter',
+    body: 'Unlocks the moment every required document is verified. Accepting it completes onboarding.',
+  },
+]
+
+/**
+ * Sign in. The only screen in the app with no data on it, so it carries the
+ * brand instead of the console's flat grid.
+ *
+ * Styled by `styles/login.css` rather than utility classes - this page needs an
+ * animated gradient angle, a mask-composited border, pointer-tracked light and
+ * real grain, none of which express well as utilities. Nothing here shares a
+ * component with the rest of the app, so the console is unaffected.
+ */
 export function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
@@ -14,8 +34,17 @@ export function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+
+  /* The spotlight is two custom properties; writing them straight to the node
+     keeps the pointer out of React state, so moving the mouse never re-renders. */
+  const trackPointer = useCallback((event) => {
+    const box = event.currentTarget.getBoundingClientRect()
+    event.currentTarget.style.setProperty('--mx', `${event.clientX - box.left}px`)
+    event.currentTarget.style.setProperty('--my', `${event.clientY - box.top}px`)
+  }, [])
 
   if (isAuthenticated && !isLoading) {
     return <Navigate to={location.state?.from || '/dashboard'} replace />
@@ -44,96 +73,142 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-ink via-[#021A63] to-brand
-        px-12 py-14 text-white lg:flex lg:flex-col">
-        {/* Decorative brand texture, kept subtle per the guidelines. */}
-        <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.15]" aria-hidden="true">
-          <defs>
-            <pattern id="cf-dots" width="28" height="28" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1.4" fill="white" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#cf-dots)" />
-        </svg>
+    <div className="lg" onPointerMove={trackPointer}>
+      <span className="lg-orb lg-orb--blue" aria-hidden="true" />
+      <span className="lg-orb lg-orb--bright" aria-hidden="true" />
+      <span className="lg-orb lg-orb--teal" aria-hidden="true" />
+      <span className="lg-spot" aria-hidden="true" />
 
-        <Logo onDark subtitle="HR Onboarding" />
+      <header className="lg-head">
+        <div className="lg-brand">
+          <span className="lg-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17.5 19H7a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 18 9.5a4.75 4.75 0 0 1-.5 9.5Z" />
+            </svg>
+          </span>
+          <span>
+            <span className="lg-wordmark">CloudFuze</span>
+            <span className="lg-micro">HR Onboarding</span>
+          </span>
+        </div>
 
-        <div className="relative mt-auto max-w-lg">
-          <h1 className="text-[34px] font-semibold leading-[1.25] tracking-[-0.02em]">
-            Paperless onboarding, from documents to signed bond.
-          </h1>
-          <p className="mt-4 text-[14.5px] leading-7 text-white/75">
-            One secure link per candidate covers document collection, offer acceptance and bond signing
-            through SignatureOne - with every stage gated and audited server-side.
+        <span className="lg-status lg-micro">
+          <i aria-hidden="true" />
+          Server-enforced workflow
+        </span>
+      </header>
+
+      <main className="lg-body">
+        <section className="lg-pitch">
+          <p className="lg-eyebrow lg-micro">
+            <b aria-hidden="true" />
+            Paperless onboarding
           </p>
-          <ul className="mt-8 space-y-3.5">
-            {[
-              'Documents verified individually, with re-upload only where rejected',
-              'Offer unlocks the moment every required document is approved',
-              'Bond signing is always the final, audited step',
-            ].map((line) => (
-              <li key={line} className="flex items-start gap-3 text-[13.5px] text-white/85">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full
-                  bg-white/15 ring-1 ring-white/25">
-                  <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor"
-                    strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                </span>
-                {line}
+
+          <h1 className="lg-title">
+            One secure link.
+            <span>Zero paperwork.</span>
+          </h1>
+
+          <p className="lg-lede">
+            Every candidate moves from documents to accepted offer through a single link. No passwords, no
+            email attachments, no chasing.
+          </p>
+
+          <ol className="lg-flow">
+            {STEPS.map((step) => (
+              <li key={step.n}>
+                <h3>
+                  <em className="lg-micro">{step.n}</em>
+                  {step.title}
+                </h3>
+                <p>{step.body}</p>
               </li>
             ))}
-          </ul>
-        </div>
-      </div>
+          </ol>
+        </section>
 
-      <div className="flex items-center justify-center bg-white px-5 py-12 sm:px-10">
-        <div className="w-full max-w-[400px]">
-          <div className="lg:hidden">
-            <Logo subtitle="HR Onboarding" />
-          </div>
-          <h2 className="mt-8 text-[24px] font-semibold tracking-[-0.01em] text-ink lg:mt-0">
-            Sign in to the HR console
-          </h2>
-          <p className="mt-2 text-[13.5px] leading-6 text-ink-muted">
-            Use your CloudFuze HR account. Candidates do not sign in - they use their personal portal link.
+        <section className="lg-card">
+          <p className="lg-kicker lg-micro">
+            <b aria-hidden="true" />
+            HR console
           </p>
+          <h2>Sign in</h2>
+          <p className="lg-note">Candidates never sign in - they open their own portal link.</p>
 
-          <form className="mt-8 space-y-4" onSubmit={submit} noValidate>
-            <Field label="Work email" htmlFor="email" error={errors.email}>
-              <TextInput
-                id="email"
-                type="email"
-                autoComplete="username"
-                value={email}
-                error={errors.email}
-                placeholder="admin@cloudfuze.com"
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </Field>
-            <Field label="Password" htmlFor="password" error={errors.password}>
-              <TextInput
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                error={errors.password}
-                placeholder="••••••••"
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </Field>
-            <Button type="submit" className="w-full" size="lg" loading={submitting}>
-              Sign in
-            </Button>
+          <form className="lg-form" onSubmit={submit} noValidate>
+            <div className="lg-field">
+              <label className="lg-micro" htmlFor="email">Work email</label>
+              <div className="lg-input-wrap">
+                <input
+                  id="email"
+                  className="lg-input"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  aria-invalid={errors.email ? 'true' : undefined}
+                  placeholder="you@cloudfuze.com"
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+              {errors.email && <p className="lg-error">{errors.email}</p>}
+            </div>
+
+            <div className="lg-field">
+              <label className="lg-micro" htmlFor="password">Password</label>
+              <div className="lg-input-wrap">
+                <input
+                  id="password"
+                  className="lg-input lg-input--reveal"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  aria-invalid={errors.password ? 'true' : undefined}
+                  placeholder="Your password"
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="lg-reveal"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {showPassword ? (
+                      <>
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 5.2A9.9 9.9 0 0 1 12 5c5 0 9 4.5 9 7 0 .9-.5 2-1.4 3.1M6.2 6.7C3.9
+                          8.2 3 10.2 3 12c0 2.5 4 7 9 7 1.6 0 3-.4 4.3-1.1" />
+                        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
+                        <circle cx="12" cy="12" r="2.6" />
+                      </>
+                    )}
+                  </svg>
+                </button>
+              </div>
+              {errors.password && <p className="lg-error">{errors.password}</p>}
+            </div>
+
+            <button type="submit" className="lg-submit" disabled={submitting}>
+              <span>
+                {submitting && <i className="lg-spinner" aria-hidden="true" />}
+                {submitting ? 'Signing in' : 'Sign in'}
+              </span>
+            </button>
           </form>
 
-          <p className="mt-8 text-[12px] leading-5 text-ink-muted">
-            Trouble signing in? Contact your CloudFuze IT administrator. Sessions expire automatically and
-            no candidate data is stored in your browser.
+          <p className="lg-fine">
+            Sessions expire automatically and no candidate data is kept in your browser. Trouble signing in?
+            Contact your CloudFuze IT administrator.
           </p>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }

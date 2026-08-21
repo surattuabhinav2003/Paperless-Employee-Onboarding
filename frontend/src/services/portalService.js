@@ -64,16 +64,4 @@ export const portalService = {
     return data
   },
 
-  async bond(token) {
-    const { data } = await apiClient.get(`/portal/${token}/bond`)
-    return data
-  },
-
-  async signBond(token, signerFullName) {
-    const { data } = await apiClient.post(`/portal/${token}/bond/sign`, {
-      signerFullName,
-      consent: true,
-    })
-    return data
-  },
 }

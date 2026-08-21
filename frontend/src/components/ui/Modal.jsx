@@ -36,17 +36,17 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
-        className={`relative z-10 w-full ${WIDTHS[size]} animate-slide-up rounded-card bg-white shadow-pop`}
+        className={`relative z-10 w-full ${WIDTHS[size]} cf-notch animate-slide-up rounded bg-white shadow-pop`}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-surface-line px-6 py-4">
+        <header className="cf-canopy flex items-start justify-between gap-4 px-6 py-4">
           <div>
-            <h2 className="text-[17px] font-semibold text-ink">{title}</h2>
-            {description && <p className="mt-1 text-[13px] text-ink-muted">{description}</p>}
+            <h2 className="relative text-[17px]">{title}</h2>
+            {description && <p className="relative mt-1 text-[13px] text-white/70">{description}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1.5 text-ink-muted transition hover:bg-surface-offwhite hover:text-ink"
+            className="relative rounded p-1.5 text-white/70 transition hover:bg-white/15 hover:text-white"
             aria-label="Close dialog"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -57,7 +57,7 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
         <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
         {footer && (
           <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-surface-line
-            bg-surface-offwhite/60 px-6 py-4">
+            bg-surface-canvas px-6 py-4">
             {footer}
           </footer>
         )}

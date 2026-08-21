@@ -4,7 +4,7 @@ function stripApiPrefix(path) {
   return path?.startsWith('/api') ? path.slice(4) : path
 }
 
-/** Used by the signed-bond download, which is a deliberate save-to-disk. */
+/** Used by deliberate save-to-disk downloads. */
 function triggerDownload(objectUrl, filename) {
   const link = document.createElement('a')
   link.href = objectUrl
@@ -74,15 +74,6 @@ export const hrService = {
     return data
   },
 
-  async uploadBond(candidateId, file, documentVersion) {
-    const form = new FormData()
-    form.append('file', file)
-    const { data } = await apiClient.post(`/hr/candidates/${candidateId}/bond`, form, {
-      params: documentVersion ? { documentVersion } : undefined,
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    return data
-  },
 
   async portalLink(candidateId) {
     const { data } = await apiClient.get(`/hr/candidates/${candidateId}/portal-link`)

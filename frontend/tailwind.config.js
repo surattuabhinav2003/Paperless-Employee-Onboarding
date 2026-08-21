@@ -7,21 +7,53 @@ export default {
         // CloudFuze brand palette - blue, never violet.
         brand: {
           DEFAULT: '#0129AC',
-          deep: '#0129AC',
+          deep: '#01133F',
+          // The workhorse blue for interface chrome: the same hue as the brand
+          // but light enough to sit on white without shouting.
+          mid: '#2F6FD8',
           bright: '#0C18D4',
           light: '#809EFC',
-          tint: '#E1ECFF',
+          tint: '#EEF3FF',
+          wash: '#F6F9FF',
           ink: '#01133F',
         },
+        // A real ink ramp. Pure #000 on white is harsh and reads cheap; a deep
+        // blue-black is softer and pairs with the brand hue.
         ink: {
-          DEFAULT: '#000000',
-          body: '#2e2e2e',
-          muted: '#707070',
+          DEFAULT: '#0F172A',
+          body: '#3A4459',
+          muted: '#6B7688',
+          faint: '#98A1B2',
         },
         surface: {
           DEFAULT: '#ffffff',
+          canvas: '#F6F7FA',
+          raised: '#FBFCFE',
           offwhite: '#F6F6F6',
-          line: '#EBEBEB',
+          line: '#E7EAF1',
+          hair: '#F0F2F7',
+        },
+        // Passive states - waiting on someone else, nothing for HR to do.
+        slate: {
+          DEFAULT: '#8595BC',
+          tint: '#F1F3F9',
+          line: '#DDE2EE',
+          ink: '#586780',
+        },
+        amber: {
+          DEFAULT: '#E0A63C',
+          tint: '#FFF8EC',
+          ink: '#8A5A08',
+        },
+        // Softened companions to the accent set. The neon originals are right
+        // for a 3px bar or a small icon but too loud across a panel, so large
+        // surfaces and big numerals use these instead. Brand blue still leads.
+        soft: {
+          blue: '#A8BEEA',
+          teal: '#6FD3CB',
+          green: '#7FD8A6',
+          sand: '#E8C79C',
+          rose: '#EFA0A0',
         },
         accent: {
           teal: '#14CFC3',
@@ -42,13 +74,19 @@ export default {
         black: '600',
       },
       borderRadius: {
-        DEFAULT: '4px',
-        card: '10px',
+        // Softer than the old 4px everywhere. A people-facing tool should not
+        // look like a terminal; 8-12px reads friendly without going cartoonish.
+        sm: '6px',
+        DEFAULT: '8px',
+        card: '12px',
       },
       boxShadow: {
-        card: '0 1px 2px rgba(1, 41, 172, 0.04), 0 8px 24px -12px rgba(1, 19, 63, 0.16)',
+        // Real elevation, gently. Flat-everything made every surface compete.
+        xs: '0 1px 2px rgba(15, 23, 42, 0.04)',
+        card: '0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03)',
+        raised: '0 4px 14px -4px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.04)',
         pop: '0 24px 60px -24px rgba(1, 19, 63, 0.35)',
-        rail: 'inset -1px 0 0 rgba(255,255,255,0.06)',
+        rail: 'inset -1px 0 0 rgba(15, 23, 42, 0.06)',
       },
       keyframes: {
         'fade-in': {

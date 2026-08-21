@@ -1,13 +1,10 @@
 package com.cloudfuze.onboarding.service;
 
-import com.cloudfuze.onboarding.dto.BondAuditEventDto;
-import com.cloudfuze.onboarding.dto.BondDto;
 import com.cloudfuze.onboarding.dto.CandidateSummaryDto;
 import com.cloudfuze.onboarding.dto.DocumentDto;
 import com.cloudfuze.onboarding.dto.DocumentProgressDto;
 import com.cloudfuze.onboarding.dto.OfferDto;
 import com.cloudfuze.onboarding.dto.RequiredDocumentDto;
-import com.cloudfuze.onboarding.model.Bond;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentStatus;
@@ -117,7 +114,7 @@ public class OnboardingMapper {
     }
 
     public CandidateSummaryDto toSummary(Candidate candidate, List<CandidateDocument> documents,
-                                         Offer offer, Bond bond) {
+                                         Offer offer) {
         DocumentProgressDto progress = progress(candidate, documents);
         return new CandidateSummaryDto(
                 candidate.getId(),
@@ -133,9 +130,7 @@ public class OnboardingMapper {
                 progress.rejected(),
                 progress.missing(),
                 offer == null ? null : offer.getStatus(),
-                bond == null ? null : bond.getStatus(),
                 offer != null,
-                bond != null,
                 candidate.getSubmittedForReviewAt(),
                 candidate.getInvitationSentAt(),
                 candidate.getTokenExpiresAt(),
@@ -152,18 +147,6 @@ public class OnboardingMapper {
         return new OfferDto(offer.getId(), offer.getStatus(), offer.getOriginalFilename(), offer.getSizeBytes(),
                 offer.getSentAt(), offer.getViewedAt(), offer.getAcceptedAt(), offer.getAcceptedByName(),
                 offer.getUploadedBy(), offer.getNotes(), downloadUrl);
-    }
-
-    public BondDto toBondDto(Bond bond, String downloadUrl, String signedDownloadUrl) {
-        if (bond == null) {
-            return null;
-        }
-        List<BondAuditEventDto> trail = bond.getAuditTrail().stream().map(BondAuditEventDto::from).toList();
-        return new BondDto(bond.getId(), bond.getStatus(), bond.getDocumentVersion(), bond.getOriginalFilename(),
-                bond.getSizeBytes(), bond.getSignatureRequestId(), bond.getSignatureRef(), bond.getSigningUrl(),
-                bond.getSignatureInitiatedAt(), bond.getSignedAt(), bond.getSignerName(), bond.getSignerIp(),
-                bond.getSignedDocumentHash(), bond.getFailureReason(), bond.getUploadedBy(), bond.getUploadedAt(),
-                downloadUrl, bond.getSignedDocumentKey() == null ? null : signedDownloadUrl, trail);
     }
 
     /** HR-side download path for a candidate document. */

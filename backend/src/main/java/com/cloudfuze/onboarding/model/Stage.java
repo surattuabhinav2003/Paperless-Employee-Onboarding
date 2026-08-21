@@ -8,14 +8,14 @@ import java.util.Arrays;
 /**
  * The single source of truth for what a candidate is allowed to do.
  * Order matters: {@link #ordinalIndex()} backs the "at least this far" checks
- * used by the stage guard.
+ * used by the stage guard. {@link #OFFER_ACCEPTED} is terminal - accepting the
+ * offer completes onboarding.
  */
 public enum Stage {
 
     DOCS_PENDING("docs_pending", "Documents Pending", 0),
     DOCS_APPROVED("docs_approved", "Documents Approved", 1),
-    OFFER_ACCEPTED("offer_accepted", "Offer Accepted", 2),
-    BOND_SIGNED("bond_signed", "Bond Signed", 3);
+    OFFER_ACCEPTED("offer_accepted", "Offer Accepted", 2);
 
     private final String code;
     private final String label;

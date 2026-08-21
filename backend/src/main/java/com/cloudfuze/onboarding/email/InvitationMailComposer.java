@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 /**
  * Renders the single onboarding invitation email. There is exactly one email
- * template for the whole journey - documents, offer and bond all live behind the
+ * template for the whole journey - documents and offer both live behind the
  * same portal link.
  */
 @Component
@@ -57,7 +57,6 @@ public class InvitationMailComposer {
                 Everything happens in one secure portal, in three steps:
                   1. Upload your documents
                   2. Review and accept your offer letter
-                  3. Sign your employment bond
 
                 Open your onboarding portal:
                 %s
@@ -104,7 +103,6 @@ public class InvitationMailComposer {
                           <td style="font-size:13px;color:#42506b;padding:6px 0">2. Review and accept your offer letter</td>
                         </tr>
                         <tr>
-                          <td style="font-size:13px;color:#42506b;padding:6px 0">3. Sign your employment bond</td>
                         </tr>
                       </table>
                       <a href="%s" style="display:inline-block;background:#0129AC;color:#ffffff;text-decoration:none;

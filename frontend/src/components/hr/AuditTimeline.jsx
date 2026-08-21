@@ -5,14 +5,12 @@ const ACTOR_TONE = {
   hr: 'bg-brand',
   candidate: 'bg-accent-teal',
   system: 'bg-ink-muted',
-  signature_provider: 'bg-accent-blue',
 }
 
 const ACTOR_LABEL = {
   hr: 'HR',
   candidate: 'Candidate',
   system: 'System',
-  signature_provider: 'SignatureOne',
 }
 
 /** Chronological audit trail for one candidate (or the whole account). */
@@ -33,14 +31,14 @@ export function AuditTimeline({ events = [], showMetadata = true, emptyMessage }
       {events.map((event) => (
         <li key={event.id} className="relative">
           <span
-            className={`absolute -left-5 top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+            className={`absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-[2px] ring-2 ring-white ${
               ACTOR_TONE[event.actorType] || 'bg-ink-muted'
             }`}
           />
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <p className="text-[13.5px] font-medium text-ink">{event.eventLabel}</p>
-            <span className="rounded-full bg-surface-offwhite px-1.5 py-0.5 text-[10.5px] font-medium
-              uppercase tracking-[0.08em] text-ink-muted">
+            <span className="cf-micro rounded-[3px] bg-surface-canvas px-1.5 py-1 text-ink-muted
+              ring-1 ring-inset ring-surface-line">
               {ACTOR_LABEL[event.actorType] || event.actorType}
             </span>
           </div>
@@ -49,7 +47,7 @@ export function AuditTimeline({ events = [], showMetadata = true, emptyMessage }
             {event.ipAddress ? ` · ${event.ipAddress}` : ''}
           </p>
           {showMetadata && event.metadata && Object.keys(event.metadata).length > 0 && (
-            <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 rounded bg-surface-offwhite/70 px-2.5 py-2">
+            <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 rounded bg-surface-canvas px-2.5 py-2">
               {Object.entries(event.metadata)
                 .filter(([, value]) => value !== null && value !== undefined && value !== '')
                 .slice(0, 6)

@@ -17,7 +17,7 @@ public record PortalOverviewDto(
         String headline,
         String message,
         List<PortalStepDto> steps,
-        /** documents | offer | bond - the only page the candidate should be on. */
+        /** documents | offer - the only page the candidate should be on. */
         String currentStep,
         DocumentProgressDto documents,
         boolean profileSubmitted,
@@ -28,7 +28,6 @@ public record PortalOverviewDto(
         List<String> outstandingItems,
         boolean documentsUploadAllowed,
         boolean offerAvailable,
-        boolean bondAvailable,
         boolean onboardingComplete,
         Instant linkExpiresAt,
         Instant completedAt,

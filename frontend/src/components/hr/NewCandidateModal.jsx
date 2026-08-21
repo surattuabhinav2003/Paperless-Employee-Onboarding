@@ -190,7 +190,7 @@ export function NewCandidateModal({ open, onClose, documentTypes = [], onCreated
               optional ones do not.
             </p>
           </div>
-          <span className="shrink-0 rounded-full bg-brand-tint px-2.5 py-1 text-[11.5px] font-medium text-brand">
+          <span className="shrink-0 rounded bg-brand-tint px-2.5 py-1 text-[11.5px] font-medium text-brand">
             {selected.size} selected
           </span>
         </div>
@@ -234,7 +234,7 @@ export function NewCandidateModal({ open, onClose, documentTypes = [], onCreated
                               event.preventDefault()
                               toggleOptional(option.value)
                             }}
-                            className="mt-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5
+                            className="mt-1.5 inline-flex items-center gap-1 rounded-[3px] border px-2 py-0.5
                               text-[11px] font-medium transition"
                             style={{
                               borderColor: optional.has(option.value) ? '#EBEBEB' : '#0129AC',

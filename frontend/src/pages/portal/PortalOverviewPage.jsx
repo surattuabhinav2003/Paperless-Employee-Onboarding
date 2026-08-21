@@ -9,7 +9,6 @@ const NEXT_ACTION = {
   docs_pending_review: { label: 'Review & submit', to: 'review' },
   docs_pending_submitted: { label: 'View what I submitted', to: 'review' },
   docs_approved: { label: 'Review my offer letter', to: 'offer' },
-  offer_accepted: { label: 'Sign my bond', to: 'bond' },
 }
 
 export function PortalOverviewPage() {
@@ -28,7 +27,7 @@ export function PortalOverviewPage() {
     return (
       <section className="cf-card overflow-hidden">
         <div className="bg-[#F3FCF7] px-6 py-10 text-center">
-          <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full
+          <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded
             bg-accent-green text-white">
             <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2.2"
               strokeLinecap="round" strokeLinejoin="round">
@@ -37,12 +36,12 @@ export function PortalOverviewPage() {
           </span>
           <h2 className="text-[20px] font-semibold text-ink">Onboarding Complete</h2>
           <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-6 text-ink-muted">
-            Every step is done - documents approved, offer accepted and your bond signed on{' '}
+            Every step is done - documents approved and your offer accepted on{' '}
             {formatDateTime(overview.completedAt)}. Your HR team will be in touch with joining details.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-2.5">
-            <Link to={`/portal/${token}/bond`}>
-              <Button variant="secondary">View my signed bond</Button>
+            <Link to={`/portal/${token}/offer`}>
+              <Button variant="secondary">View my offer letter</Button>
             </Link>
             <Link to={`/portal/${token}/documents`}>
               <Button variant="ghost">Review my documents</Button>
@@ -72,7 +71,7 @@ export function PortalOverviewPage() {
             HR's side of the process. */}
         {overview.currentStep === 'documents' && (
           <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-card border border-surface-line bg-surface-offwhite/60 p-4">
+            <div className="rounded border border-surface-line bg-surface-canvas p-4">
               <dt className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-ink-muted">
                 Your details
               </dt>
@@ -89,7 +88,7 @@ export function PortalOverviewPage() {
                 )}
               </p>
             </div>
-            <div className="rounded-card border border-surface-line bg-surface-offwhite/60 p-4">
+            <div className="rounded border border-surface-line bg-surface-canvas p-4">
               <dt className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-ink-muted">
                 Documents uploaded
               </dt>

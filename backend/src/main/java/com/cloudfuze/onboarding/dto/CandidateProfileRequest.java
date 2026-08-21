@@ -28,8 +28,9 @@ public record CandidateProfileRequest(
                 message = "Enter a valid contact number (8-20 digits, optional + prefix)")
         String contactNumber,
 
-        @Pattern(regexp = "^$|^\\+?[0-9][0-9 \\-]{7,19}$",
-                message = "Enter a valid alternate contact number, or leave it blank")
+        @NotBlank(message = "Alternate contact number is required")
+        @Pattern(regexp = "^\\+?[0-9][0-9 \\-]{7,19}$",
+                message = "Enter a valid alternate contact number")
         String alternateContactNumber,
 
         @NotNull(message = "Date of birth is required")

@@ -18,7 +18,7 @@ export function Toaster({ toasts, onDismiss }) {
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex animate-slide-up overflow-hidden rounded-card bg-white
+            className={`pointer-events-auto flex animate-slide-up overflow-hidden rounded bg-white
               shadow-pop ring-1 ${variant.ring}`}
           >
             <span className={`w-1 shrink-0 ${variant.bar}`} />
@@ -44,7 +44,7 @@ export function Toaster({ toasts, onDismiss }) {
               <button
                 type="button"
                 onClick={() => onDismiss(toast.id)}
-                className="shrink-0 rounded p-1 text-ink-muted transition hover:bg-surface-offwhite hover:text-ink"
+                className="shrink-0 rounded p-1 text-ink-muted transition hover:bg-surface-canvas hover:text-ink"
                 aria-label="Dismiss notification"
               >
                 <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">

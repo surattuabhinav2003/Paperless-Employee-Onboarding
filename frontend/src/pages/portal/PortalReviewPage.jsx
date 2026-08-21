@@ -120,7 +120,7 @@ export function PortalReviewPage() {
                 <p className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium text-ink">
                   {doc.typeLabel}
                   {doc.courseLabel && (
-                    <span className="rounded-full bg-brand-tint px-2 py-0.5 text-[11px] font-medium text-brand">
+                    <span className="rounded bg-brand-tint px-2 py-0.5 text-[11px] font-medium text-brand">
                       {doc.courseLabel}
                     </span>
                   )}

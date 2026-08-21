@@ -15,14 +15,12 @@ import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.exception.DuplicateResourceException;
 import com.cloudfuze.onboarding.exception.ResourceNotFoundException;
 import com.cloudfuze.onboarding.model.AuditEventType;
-import com.cloudfuze.onboarding.model.Bond;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.Offer;
 import com.cloudfuze.onboarding.model.RequiredDocument;
 import com.cloudfuze.onboarding.model.Stage;
-import com.cloudfuze.onboarding.repository.BondRepository;
 import com.cloudfuze.onboarding.repository.CandidateDocumentRepository;
 import com.cloudfuze.onboarding.repository.CandidateRepository;
 import com.cloudfuze.onboarding.repository.CandidateSpecifications;
@@ -59,7 +57,6 @@ public class CandidateService {
     private final CandidateRepository candidateRepository;
     private final CandidateDocumentRepository documentRepository;
     private final OfferRepository offerRepository;
-    private final BondRepository bondRepository;
     private final CandidateProfileService profileService;
     private final PortalTokenService portalTokenService;
     private final EmailService emailService;
@@ -70,7 +67,6 @@ public class CandidateService {
     public CandidateService(CandidateRepository candidateRepository,
                            CandidateDocumentRepository documentRepository,
                            OfferRepository offerRepository,
-                           BondRepository bondRepository,
                            CandidateProfileService profileService,
                            PortalTokenService portalTokenService,
                            EmailService emailService,
@@ -80,7 +76,6 @@ public class CandidateService {
         this.candidateRepository = candidateRepository;
         this.documentRepository = documentRepository;
         this.offerRepository = offerRepository;
-        this.bondRepository = bondRepository;
         this.profileService = profileService;
         this.portalTokenService = portalTokenService;
         this.emailService = emailService;
@@ -126,7 +121,7 @@ public class CandidateService {
 
         log.info("Candidate {} created by {} with {} required documents", candidate.getEmail(), hrUser.getEmail(),
                 candidate.getRequiredDocuments().size());
-        return new CandidateCreatedDto(mapper.toSummary(candidate, List.of(), null, null), invitation);
+        return new CandidateCreatedDto(mapper.toSummary(candidate, List.of(), null), invitation);
     }
 
     /** Re-issues the portal link and emails it. The previous link stops working. */
@@ -158,11 +153,10 @@ public class CandidateService {
         List<UUID> ids = result.getContent().stream().map(Candidate::getId).toList();
         Map<UUID, List<CandidateDocument>> documents = documentsByCandidate(ids);
         Map<UUID, Offer> offers = offersByCandidate(ids);
-        Map<UUID, Bond> bonds = bondsByCandidate(ids);
 
         return PageResponse.from(result, candidate -> mapper.toSummary(candidate,
                 documents.getOrDefault(candidate.getId(), List.of()),
-                offers.get(candidate.getId()), bonds.get(candidate.getId())));
+                offers.get(candidate.getId())));
     }
 
     @Transactional(readOnly = true)
@@ -170,16 +164,13 @@ public class CandidateService {
         Candidate candidate = requireCandidate(candidateId);
         List<CandidateDocument> documents = documentRepository.findByCandidateIdOrderByUploadedAtAsc(candidateId);
         Offer offer = offerRepository.findByCandidateId(candidateId).orElse(null);
-        Bond bond = bondRepository.findByCandidateId(candidateId).orElse(null);
 
         return new CandidateDetailDto(
-                mapper.toSummary(candidate, documents, offer, bond),
+                mapper.toSummary(candidate, documents, offer),
                 profileService.view(candidateId),
                 mapper.toRequiredDocumentDtos(candidate),
                 mapper.toDocumentDtos(candidate, documents, mapper::hrDocumentUrl),
                 mapper.toOfferDto(offer, "/api/hr/candidates/" + candidateId + "/offer/file"),
-                mapper.toBondDto(bond, "/api/hr/candidates/" + candidateId + "/bond/file",
-                        "/api/hr/candidates/" + candidateId + "/bond/signed-file"),
                 auditService.forCandidate(candidateId));
     }
 
@@ -188,8 +179,7 @@ public class CandidateService {
         Candidate candidate = requireCandidate(candidateId);
         return mapper.toSummary(candidate,
                 documentRepository.findByCandidateIdOrderByUploadedAtAsc(candidateId),
-                offerRepository.findByCandidateId(candidateId).orElse(null),
-                bondRepository.findByCandidateId(candidateId).orElse(null));
+                offerRepository.findByCandidateId(candidateId).orElse(null));
     }
 
     @Transactional(readOnly = true)
@@ -197,11 +187,10 @@ public class CandidateService {
         List<UUID> ids = candidates.stream().map(Candidate::getId).toList();
         Map<UUID, List<CandidateDocument>> documents = documentsByCandidate(ids);
         Map<UUID, Offer> offers = offersByCandidate(ids);
-        Map<UUID, Bond> bonds = bondsByCandidate(ids);
         return candidates.stream()
                 .map(candidate -> mapper.toSummary(candidate,
                         documents.getOrDefault(candidate.getId(), List.of()),
-                        offers.get(candidate.getId()), bonds.get(candidate.getId())))
+                        offers.get(candidate.getId())))
                 .toList();
     }
 
@@ -301,13 +290,4 @@ public class CandidateService {
         return offers;
     }
 
-    private Map<UUID, Bond> bondsByCandidate(List<UUID> candidateIds) {
-        if (candidateIds.isEmpty()) {
-            return Map.of();
-        }
-        Map<UUID, Bond> bonds = new HashMap<>();
-        bondRepository.findByCandidateIdIn(candidateIds)
-                .forEach(bond -> bonds.put(bond.getCandidate().getId(), bond));
-        return bonds;
-    }
 }

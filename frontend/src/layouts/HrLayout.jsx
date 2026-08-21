@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/ui/Logo'
 import { useAuth } from '../context/AuthContext'
 import { initialsOf } from '../utils/format'
+import '../styles/console.css'
 
 const COLLAPSED_KEY = 'cf_hr_sidebar_collapsed'
 
@@ -32,13 +33,13 @@ const NAV_ITEMS = [
   },
   {
     to: '/candidates',
-    label: 'Pipeline',
-    hint: 'All candidates and stages',
+    label: 'Candidate Records',
+    hint: 'Every candidate and status',
     icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm9 14v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   },
   {
-    to: '/offers-bonds',
-    label: 'Offers & Bonds',
+    to: '/offers',
+    label: 'Offer Letters',
     hint: 'Publish offers, track signatures',
     icon: 'M9 12l2 2 4-4M7.8 4.6a3 3 0 0 0-3.2 3.2 3 3 0 0 1-.8 2.4 3 3 0 0 0 0 4 3 3 0 0 1 .8 2.4 3 3 0 0 0 3.2 3.2 3 3 0 0 1 2.3 1 3 3 0 0 0 3.8 0 3 3 0 0 1 2.3-1 3 3 0 0 0 3.2-3.2 3 3 0 0 1 .8-2.4 3 3 0 0 0 0-4 3 3 0 0 1-.8-2.4 3 3 0 0 0-3.2-3.2 3 3 0 0 1-2.3-1 3 3 0 0 0-3.8 0 3 3 0 0 1-2.3 1Z',
   },
@@ -70,49 +71,39 @@ export function HrLayout() {
 
   /** @param {boolean} rail icon-only rail (desktop collapsed); the mobile drawer is always full width */
   const sidebarBody = (rail) => (
-    <div className="flex h-full flex-col bg-gradient-to-b from-brand-ink via-[#021A63] to-brand pb-4 pt-5">
-      <div className={`pb-5 ${rail ? 'flex flex-col items-center gap-3 px-3' : 'flex items-center gap-2 px-5'}`}>
+    <div className="c-rail">
+      <div className={rail ? 'c-rail-top c-rail-top--narrow' : 'c-rail-top'}>
         <Logo onDark subtitle={rail ? null : 'HR Onboarding'} compact={rail} />
         <button
           type="button"
           onClick={toggleCollapsed}
-          className={`hidden shrink-0 rounded p-1.5 text-white/60 transition hover:bg-white/10
-            hover:text-white lg:block ${rail ? '' : 'ml-auto'}`}
+          className="c-rail-toggle"
+          style={rail ? undefined : { marginLeft: 'auto' }}
           aria-label={rail ? 'Expand navigation' : 'Collapse navigation'}
           aria-expanded={!rail}
           title={rail ? 'Expand navigation' : 'Collapse navigation'}
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round">
             <path d={rail ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'} />
           </svg>
         </button>
       </div>
 
-      <nav className={`flex flex-1 flex-col gap-1 ${rail ? 'px-2' : 'px-3'}`}>
-        {!rail && (
-          <p className="px-3 pb-2 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/40">
-            Onboarding
-          </p>
-        )}
+      <nav className="c-nav">
+        {!rail && <p className="c-rail-heading">Onboarding</p>}
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             title={rail ? item.label : undefined}
             className={({ isActive }) =>
-              `group flex rounded transition-colors ${
-                rail ? 'items-center justify-center p-2.5' : 'items-start gap-3 px-3 py-2.5'
-              } ${
-                isActive
-                  ? 'bg-white/12 text-white ring-1 ring-inset ring-white/15'
-                  : 'text-white/70 hover:bg-white/8 hover:text-white'
-              }`
+              `c-nav-item${rail ? ' c-nav-item--narrow' : ''}${isActive ? ' is-active' : ''}`
             }
           >
             <svg
               viewBox="0 0 24 24"
-              className={`h-4 w-4 shrink-0 ${rail ? '' : 'mt-0.5'}`}
+              className="c-nav-icon"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.7"
@@ -122,60 +113,45 @@ export function HrLayout() {
               <path d={item.icon} />
             </svg>
             {!rail && (
-              <span className="min-w-0">
-                <span className="block text-[13.5px] font-medium leading-5">{item.label}</span>
-                <span className="block truncate text-[11px] text-white/45">{item.hint}</span>
+              <span className="c-nav-text">
+                <span className="c-nav-label">{item.label}</span>
+                <span className="c-nav-hint">{item.hint}</span>
               </span>
             )}
           </NavLink>
         ))}
       </nav>
 
-      <div className={`mt-4 ${rail ? 'px-2' : 'px-3'}`}>
+      <div className="c-rail-foot">
         {rail ? (
-          <div className="flex flex-col items-center gap-2">
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-[12px]
-                font-semibold text-white"
-              title={`${user?.fullName || 'HR user'} (${user?.email || ''})`}
-            >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <span className="c-avatar" title={`${user?.fullName || 'HR user'} (${user?.email || ''})`}>
               {initialsOf(user?.fullName)}
             </span>
             <button
               type="button"
               onClick={signOut}
-              className="rounded p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="c-signout c-signout--icon"
               aria-label="Log out"
               title="Log out"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 strokeLinecap="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
               </svg>
             </button>
           </div>
         ) : (
-          <div className="rounded-card bg-white/8 p-3 ring-1 ring-inset ring-white/12">
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/50">Signed in as</p>
-            <div className="mt-2 flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-[12px]
-                font-semibold text-white">
-                {initialsOf(user?.fullName)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium text-white">
-                  {user?.fullName || 'HR user'}
-                </span>
-                <span className="block truncate text-[11px] text-white/50">{user?.email}</span>
+          <div className="c-user">
+            <div className="c-user-row">
+              <span className="c-avatar">{initialsOf(user?.fullName)}</span>
+              <span className="c-user-who">
+                <span className="c-user-name">{user?.fullName || 'HR user'}</span>
+                <span className="c-user-mail">{user?.email}</span>
               </span>
             </div>
-            <button
-              type="button"
-              onClick={signOut}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded border border-white/25
-                px-3 py-2 text-[12.5px] font-semibold text-white transition hover:bg-white hover:text-brand"
-            >
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"
+            <button type="button" onClick={signOut} className="c-signout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 strokeLinecap="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
               </svg>
@@ -188,7 +164,7 @@ export function HrLayout() {
   )
 
   return (
-    <div className="min-h-screen bg-surface-offwhite">
+    <div className="min-h-screen bg-surface-canvas">
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden transition-[width] duration-200 ease-out lg:block
           ${collapsed ? 'w-[76px]' : 'w-[268px]'}`}
@@ -198,7 +174,7 @@ export function HrLayout() {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-brand-ink/50" onClick={() => setMobileOpen(false)} />
+          <div className="absolute inset-0 bg-ink/35 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-[280px] animate-slide-up shadow-pop">
             {sidebarBody(false)}
           </aside>
@@ -214,11 +190,11 @@ export function HrLayout() {
             button. On desktop the sidebar carries the branding and the signed-in
             user, so no top bar is rendered at all. */}
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-surface-line
-          bg-white/90 px-4 backdrop-blur sm:px-6 lg:hidden">
+          bg-white/95 px-4 backdrop-blur sm:px-6 lg:hidden">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="rounded p-2 text-ink-body transition hover:bg-surface-offwhite"
+            className="rounded p-2 text-ink-body transition hover:bg-surface-canvas"
             aria-label="Open navigation"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"

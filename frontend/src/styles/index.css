@@ -2,98 +2,421 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    color-scheme: light;
-  }
+/* ============================================================================
+ * CloudFuze Onboarding - the HR console.
+ *
+ * Hand-written core CSS. No @apply anywhere: every surface, colour, control and
+ * type decision below is real CSS, so it can do things utilities cannot and can
+ * be read in one place.
+ *
+ * COLOUR - a deliberately small palette, but actually used:
+ *   navy      the navigation rail and deep text
+ *   blue      CloudFuze #0129AC, the primary action and the anchor
+ *   teal      review / in progress
+ *   amber     waiting on someone
+ *   green     done
+ *   rose      needs attention
+ * Each has one saturated value for marks and one tint for surfaces, which is
+ * what lets a panel carry colour without shouting.
+ *
+ * TYPE - two families doing different jobs:
+ *   Space Grotesk  titles and figures: tight, geometric, distinctive
+ *   Poppins        anything read as prose (brand font, capped at 600)
+ * ========================================================================== */
 
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
+:root {
+  /* ---- ink ---- */
+  --ink-900: #0b1533;
+  --ink-700: #263353;
+  --ink-600: #46536e;
+  --ink-400: #7a87a1;
+  --ink-300: #9aa5bd;
 
-  body {
-    @apply bg-surface-offwhite font-sans text-[15px] leading-relaxed text-ink-body antialiased;
-  }
+  /* ---- navy (the rail) ---- */
+  --navy-900: #0a1430;
+  --navy-800: #0e1c46;
+  --navy-700: #14286a;
 
-  /* Headings inherit their container colour so they stay legible on the brand
-     gradients; light surfaces set text-ink explicitly. */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5 {
-    @apply font-semibold;
-    color: inherit;
-    line-height: 1.4;
-  }
+  /* ---- brand blue ---- */
+  --blue-700: #0129ac;
+  --blue-600: #1c4fc4;
+  --blue-500: #2f6fd8;
+  --blue-200: #c5d8ff;
+  --blue-100: #e4edff;
+  --blue-050: #f1f6ff;
 
-  /* Poppins caps out at 600 for CloudFuze brand compliance. */
-  strong,
-  b {
-    font-weight: 600;
-  }
+  /* ---- supporting hues ---- */
+  --teal-600: #0f9a92;
+  --teal-500: #12b3aa;
+  --teal-100: #dcf5f3;
+  --amber-600: #b57912;
+  --amber-500: #e29b2b;
+  --amber-100: #fdf0d9;
+  --green-600: #1c8a5c;
+  --green-500: #23a56f;
+  --green-100: #ddf3e8;
+  --rose-600: #bf433f;
+  --rose-500: #d8534f;
+  --rose-100: #fbe5e4;
 
-  :focus-visible {
-    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-white;
-  }
+  /* ---- surfaces ---- */
+  --canvas: #eef2fa;
+  --paper: #ffffff;
+  --line: #dfe6f3;
+  --hair: #eceff8;
 
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
 
-  ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-black/15;
-  }
+  --shadow-sm: 0 1px 2px rgba(11, 21, 51, 0.05);
+  --shadow: 0 2px 8px -2px rgba(11, 21, 51, 0.08), 0 1px 2px rgba(11, 21, 51, 0.04);
+  --shadow-lg: 0 18px 40px -16px rgba(11, 21, 51, 0.22);
 
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-black/25;
-  }
+  --display: 'Space Grotesk', 'Poppins', system-ui, sans-serif;
+  --text: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  color-scheme: light;
 }
 
-@layer components {
-  .cf-card {
-    @apply rounded-card border border-surface-line bg-white shadow-card;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
+}
 
-  .cf-label {
-    @apply mb-1.5 block text-[13px] font-medium text-ink-body;
-  }
+body {
+  margin: 0;
+  background: var(--canvas);
+  font-family: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-600);
+  -webkit-font-smoothing: antialiased;
+}
 
-  .cf-input {
-    @apply w-full rounded border border-surface-line bg-white px-3 py-2.5 text-[14px] text-ink-body
-      placeholder:text-ink-muted/70 transition focus:border-brand focus:outline-none
-      focus:ring-2 focus:ring-brand/15 disabled:cursor-not-allowed disabled:bg-surface-offwhite;
-  }
+/* Titles and figures use the display face; prose stays on Poppins. */
+h1,
+h2,
+h3,
+h4,
+h5 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+  color: inherit;
+}
 
-  .cf-input-error {
-    @apply border-accent-red focus:border-accent-red focus:ring-accent-red/15;
-  }
+strong,
+b {
+  font-weight: 600;
+}
 
-  .cf-th {
-    @apply whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted;
-  }
+:focus-visible {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+}
 
-  .cf-td {
-    @apply px-4 py-3.5 align-middle text-[13.5px] text-ink-body;
-  }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
 
-  .cf-row {
-    @apply border-t border-surface-line transition-colors hover:bg-brand-tint/40;
-  }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  .cf-skeleton {
-    @apply relative overflow-hidden rounded bg-surface-line/70;
-  }
+::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: rgba(122, 135, 161, 0.35);
+}
 
-  .cf-skeleton::after {
-    content: '';
-    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/70 to-transparent;
-    animation: shimmer 1.4s infinite;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 135, 161, 0.6);
+}
 
-  .cf-scroll-x {
-    @apply overflow-x-auto;
-    scrollbar-width: thin;
-  }
+/* ==========================================================================
+ * Surfaces
+ * ======================================================================== */
+
+.cf-panel,
+.cf-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Kept as a no-op: a clipped corner fights a 14px radius, but call sites
+   still reference it. */
+.cf-notch {
+  clip-path: none;
+}
+
+/* A panel that leads with state. */
+.cf-spine {
+  position: relative;
+  overflow: hidden;
+}
+
+.cf-spine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--blue-500);
+}
+
+.cf-spine-green::before { background: var(--green-500); }
+.cf-spine-amber::before { background: var(--amber-500); }
+.cf-spine-teal::before  { background: var(--teal-500); }
+.cf-spine-slate::before { background: var(--blue-200); }
+
+/* The candidate portal's hero - the one deep surface in the app. */
+.cf-canopy {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background-image:
+    radial-gradient(90% 130% at 88% -20%, rgba(18, 179, 170, 0.22) 0%, transparent 55%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 16px),
+    linear-gradient(146deg, var(--navy-900) 0%, var(--navy-800) 48%, var(--navy-700) 100%);
+}
+
+/* ==========================================================================
+ * Type helpers
+ * ======================================================================== */
+
+.cf-micro {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.cf-figure {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
+}
+
+/* ==========================================================================
+ * Inputs
+ * ======================================================================== */
+
+.cf-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.cf-input {
+  width: 100%;
+  /* Longhands, not a shorthand: a shorthand here would silently clobber the
+     padding modifiers below (and any utility) purely by source order. */
+  padding-block: 10px;
+  padding-inline: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-900);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.cf-input::placeholder { color: var(--ink-300); }
+
+.cf-input:hover:not(:focus) { border-color: var(--blue-200); }
+
+.cf-input:focus {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(47, 111, 216, 0.18);
+}
+
+/* Leaves room for a leading icon. */
+.cf-input--icon { padding-inline-start: 38px; }
+
+/* Leaves room for the native select arrow. */
+.cf-input--select { padding-inline-end: 34px; }
+
+.cf-input-error {
+  border-color: var(--rose-500);
+  box-shadow: 0 0 0 3px rgba(216, 83, 79, 0.16);
+}
+
+/* ==========================================================================
+ * Tables
+ * ======================================================================== */
+
+.cf-th {
+  padding: 11px 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--ink-400);
+  background: var(--blue-050);
+}
+
+.cf-td {
+  padding: 14px 20px;
+  vertical-align: middle;
+  font-size: 13.5px;
+  color: var(--ink-600);
+}
+
+.cf-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* ==========================================================================
+ * Status pills - a tinted chip with a saturated dot
+ * ======================================================================== */
+
+.cf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cf-tag i {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.t-grey  { background: #eef1f7; border-color: #e2e7f1; color: var(--ink-600); }
+.t-grey  i { background: var(--ink-300); }
+.t-blue  { background: var(--blue-100); border-color: var(--blue-200); color: var(--blue-700); }
+.t-blue  i { background: var(--blue-500); }
+.t-slate { background: #eef2fa; border-color: #dde4f2; color: #4b5a78; }
+.t-slate i { background: #8fa0c4; }
+.t-teal  { background: var(--teal-100); border-color: #bfe9e5; color: var(--teal-600); }
+.t-teal  i { background: var(--teal-500); }
+.t-amber { background: var(--amber-100); border-color: #f3ddb4; color: var(--amber-600); }
+.t-amber i { background: var(--amber-500); }
+.t-green { background: var(--green-100); border-color: #bfe6d3; color: var(--green-600); }
+.t-green i { background: var(--green-500); }
+.t-red   { background: var(--rose-100); border-color: #f5cbc9; color: var(--rose-600); }
+.t-red   i { background: var(--rose-500); }
+
+/* Bare dots, for timelines and legends. */
+.d-grey  { background: var(--ink-300); }
+.d-blue  { background: var(--blue-500); }
+.d-slate { background: #8fa0c4; }
+.d-teal  { background: var(--teal-500); }
+.d-amber { background: var(--amber-500); }
+.d-green { background: var(--green-500); }
+.d-red   { background: var(--rose-500); }
+
+/* ==========================================================================
+ * Buttons
+ * ======================================================================== */
+
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-family: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease,
+    box-shadow 160ms ease, transform 100ms ease;
+}
+
+.c-btn:active:not(:disabled) { transform: translateY(1px); }
+.c-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+
+.c-btn--sm { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
+.c-btn--lg { padding: 13px 24px; font-size: 15px; }
+
+/* Primary: a real gradient, so the main action is unmistakably the main one. */
+.c-btn--primary {
+  background-image: linear-gradient(135deg, var(--blue-700) 0%, var(--blue-500) 100%);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(11, 21, 51, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.c-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 6px 16px -6px rgba(28, 79, 196, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.c-btn--secondary {
+  border-color: var(--blue-200);
+  background: var(--blue-050);
+  color: var(--blue-700);
+}
+
+.c-btn--secondary:hover:not(:disabled) { background: var(--blue-100); border-color: var(--blue-500); }
+
+.c-btn--subtle {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--ink-700);
+  box-shadow: var(--shadow-sm);
+}
+
+.c-btn--subtle:hover:not(:disabled) { border-color: var(--blue-200); color: var(--blue-700); }
+
+.c-btn--ghost { background: transparent; color: var(--ink-600); }
+.c-btn--ghost:hover:not(:disabled) { background: var(--blue-050); color: var(--blue-700); }
+
+.c-btn--danger { background: var(--rose-500); color: #fff; }
+.c-btn--danger:hover:not(:disabled) { background: var(--rose-600); }
+
+.c-btn--success { background: var(--green-500); color: #fff; }
+.c-btn--success:hover:not(:disabled) { background: var(--green-600); }
+
+/* ==========================================================================
+ * Feedback
+ * ======================================================================== */
+
+.cf-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--hair);
+}
+
+.cf-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  animation: cf-shimmer 1.4s infinite;
+}
+
+@keyframes cf-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-skeleton::after { animation: none; }
 }

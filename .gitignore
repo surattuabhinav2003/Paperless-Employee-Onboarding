@@ -32,3 +32,6 @@ yarn-error.log*
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Windows null-device artifact
+nul

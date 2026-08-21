@@ -3,10 +3,9 @@
  * remains the source of truth for what a status means and what it unlocks.
  */
 export const STAGE_META = {
-  docs_pending: { label: 'Documents Pending', tone: 'amber' },
+  docs_pending: { label: 'Documents Pending', tone: 'slate' },
   docs_approved: { label: 'Verified', tone: 'green' },
-  offer_accepted: { label: 'Offer Accepted', tone: 'teal' },
-  bond_signed: { label: 'Onboarding Complete', tone: 'green' },
+  offer_accepted: { label: 'Complete', tone: 'green' },
 }
 
 export const DOCUMENT_STATUS_META = {
@@ -16,26 +15,54 @@ export const DOCUMENT_STATUS_META = {
   rejected: { label: 'Rejected', tone: 'red' },
 }
 
+/*
+ * Two states, which is all HR acts on: the offer is out, or it is signed.
+ * "Viewed" folds into Sent - knowing the candidate opened it changes nothing
+ * about what HR does next, and the exact timestamp is on the record.
+ */
 export const OFFER_STATUS_META = {
   sent: { label: 'Sent', tone: 'blue' },
-  viewed: { label: 'Viewed', tone: 'amber' },
-  accepted: { label: 'Accepted', tone: 'green' },
-}
-
-export const BOND_STATUS_META = {
-  not_initiated: { label: 'Ready to sign', tone: 'grey' },
-  awaiting_signature: { label: 'Awaiting signature', tone: 'amber' },
-  signed: { label: 'Signed', tone: 'green' },
-  failed: { label: 'Signature failed', tone: 'red' },
+  viewed: { label: 'Sent', tone: 'blue' },
+  accepted: { label: 'Signed', tone: 'green' },
 }
 
 export const TONE_CLASSES = {
-  grey: 'bg-surface-offwhite text-ink-muted ring-1 ring-inset ring-surface-line',
-  blue: 'bg-brand-tint text-brand ring-1 ring-inset ring-brand/20',
-  amber: 'bg-[#FFF4EC] text-[#B94A18] ring-1 ring-inset ring-[#FE5833]/25',
-  green: 'bg-[#E8FAF1] text-[#0E7A47] ring-1 ring-inset ring-accent-green/30',
-  teal: 'bg-[#E5FBF9] text-[#0C8B83] ring-1 ring-inset ring-accent-teal/30',
-  red: 'bg-[#FFECEC] text-[#C21414] ring-1 ring-inset ring-accent-red/25',
+  grey: 't-grey',
+  blue: 't-blue',
+  slate: 't-slate',
+  amber: 't-amber',
+  green: 't-green',
+  teal: 't-teal',
+  red: 't-red',
+}
+
+/** The leading bar on a status tag, and the dot variant. */
+export const TONE_BARS = {
+  grey: 'd-grey',
+  blue: 'd-blue',
+  slate: 'd-slate',
+  amber: 'd-amber',
+  green: 'd-green',
+  teal: 'd-teal',
+  red: 'd-red',
+}
+
+/*
+ * What each status actually means. Shown on hover so the row stays clean while
+ * the vocabulary is never ambiguous - "Verified" in particular means every
+ * required document has been checked and approved by HR, not merely uploaded.
+ */
+export const STATUS_MEANING = {
+  'Upload pending': 'Waiting on the candidate to upload their documents',
+  'Needs review': 'Documents uploaded - waiting on your review',
+  'Re-upload needed': 'A document was sent back and needs replacing',
+  'Verified': 'All required documents verified by HR - ready for an offer',
+  'Complete': 'All documents verified by HR and the offer accepted',
+  'Documents Pending': 'Waiting on the candidate to upload their documents',
+}
+
+export function statusMeaning(label) {
+  return STATUS_MEANING[label] || undefined
 }
 
 export function stageMeta(stage) {
@@ -61,7 +88,7 @@ export function pipelineStatusMeta(candidate) {
   if (candidate.submittedForReviewAt || (everythingUploaded && candidate.documentsSubmitted > 0)) {
     return { label: 'Needs review', tone: 'blue' }
   }
-  return { label: 'Upload pending', tone: 'amber' }
+  return { label: 'Upload pending', tone: 'slate' }
 }
 
 /**
@@ -101,11 +128,7 @@ export function documentStatusMeta(status) {
 }
 
 export function offerStatusMeta(status) {
-  if (!status) return { label: 'Not prepared', tone: 'grey' }
+  if (!status) return { label: 'Not sent', tone: 'slate' }
   return OFFER_STATUS_META[status] || { label: status, tone: 'grey' }
 }
 
-export function bondStatusMeta(status) {
-  if (!status) return { label: 'Not prepared', tone: 'grey' }
-  return BOND_STATUS_META[status] || { label: status, tone: 'grey' }
-}

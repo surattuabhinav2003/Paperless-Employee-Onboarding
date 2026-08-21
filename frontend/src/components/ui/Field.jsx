@@ -39,7 +39,7 @@ export function TextArea({ error, className = '', rows = 3, ...props }) {
 
 export function Select({ error, className = '', children, ...props }) {
   return (
-    <select className={`cf-input pr-8 ${error ? 'cf-input-error' : ''} ${className}`} {...props}>
+    <select className={`cf-input cf-input--select ${error ? 'cf-input-error' : ''} ${className}`} {...props}>
       {children}
     </select>
   )

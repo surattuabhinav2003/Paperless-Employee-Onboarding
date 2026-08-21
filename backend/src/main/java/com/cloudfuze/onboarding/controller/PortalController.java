@@ -3,19 +3,14 @@ package com.cloudfuze.onboarding.controller;
 import com.cloudfuze.onboarding.dto.AcceptOfferRequest;
 import com.cloudfuze.onboarding.dto.CandidateProfileDto;
 import com.cloudfuze.onboarding.dto.CandidateProfileRequest;
-import com.cloudfuze.onboarding.dto.PortalBondDto;
 import com.cloudfuze.onboarding.dto.PortalDocumentsDto;
 import com.cloudfuze.onboarding.dto.PortalOfferDto;
 import com.cloudfuze.onboarding.dto.PortalOverviewDto;
-import com.cloudfuze.onboarding.dto.SignBondRequest;
-import com.cloudfuze.onboarding.exception.BusinessRuleException;
-import com.cloudfuze.onboarding.model.Bond;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.EducationCourse;
 import com.cloudfuze.onboarding.model.Offer;
-import com.cloudfuze.onboarding.service.BondService;
 import com.cloudfuze.onboarding.service.DocumentService;
 import com.cloudfuze.onboarding.service.OfferService;
 import com.cloudfuze.onboarding.service.PortalService;
@@ -52,16 +47,14 @@ public class PortalController {
     private final PortalService portalService;
     private final DocumentService documentService;
     private final OfferService offerService;
-    private final BondService bondService;
     private final FileStorageService storageService;
 
     public PortalController(PortalService portalService, DocumentService documentService,
-                            OfferService offerService, BondService bondService,
+                            OfferService offerService,
                             FileStorageService storageService) {
         this.portalService = portalService;
         this.documentService = documentService;
         this.offerService = offerService;
-        this.bondService = bondService;
         this.storageService = storageService;
     }
 
@@ -143,38 +136,5 @@ public class PortalController {
                 RequestContext.clientIp(request));
         return DownloadResponses.inline(storageService.load(offer.getStorageKey()),
                 offer.getOriginalFilename(), offer.getContentType());
-    }
-
-    @GetMapping("/bond")
-    public ResponseEntity<PortalBondDto> bond(@PathVariable String token) {
-        return ResponseEntity.ok(portalService.bond(token));
-    }
-
-    @PostMapping("/bond/sign")
-    public ResponseEntity<PortalBondDto> signBond(@PathVariable String token,
-                                                  @Valid @RequestBody SignBondRequest body,
-                                                  HttpServletRequest request) {
-        return ResponseEntity.ok(portalService.signBond(token, body, RequestContext.clientIp(request),
-                RequestContext.userAgent(request)));
-    }
-
-    @GetMapping("/bond/file")
-    public ResponseEntity<Resource> bondFile(@PathVariable String token) {
-        Candidate candidate = portalService.authenticate(token);
-        Bond bond = bondService.requireBondForCandidate(candidate);
-        return DownloadResponses.inline(storageService.load(bond.getStorageKey()),
-                bond.getOriginalFilename(), bond.getContentType());
-    }
-
-    @GetMapping("/bond/signed-file")
-    public ResponseEntity<Resource> signedBondFile(@PathVariable String token) {
-        Candidate candidate = portalService.authenticate(token);
-        Bond bond = bondService.requireBondForCandidate(candidate);
-        if (bond.getSignedDocumentKey() == null) {
-            throw new BusinessRuleException("SIGNED_BOND_NOT_AVAILABLE",
-                    "Your signed bond is not available yet.");
-        }
-        return DownloadResponses.attachment(storageService.load(bond.getSignedDocumentKey()),
-                "signed-" + bond.getOriginalFilename(), bond.getContentType());
     }
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
 import { Field, Select, TextArea, TextInput } from '../../components/ui/Field'
+import { DateField } from '../../components/ui/DateField'
 import { LoadingState } from '../../components/ui/Spinner'
 import { useToast } from '../../context/ToastContext'
 import { useAsync } from '../../hooks/useAsync'
@@ -57,8 +58,12 @@ export function PortalDetailsPage() {
     }
   }, [existing.data, existing.loading, overview.candidateName])
 
-  const set = (field) => (event) => {
-    setForm((current) => ({ ...current, [field]: event.target.value }))
+  const set = (field) => (event) => setValue(field, event.target.value)
+
+  /* Shared by the text inputs and the date picker, so both clear their own
+     validation error as soon as the value changes. */
+  const setValue = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
   }
 
@@ -71,8 +76,9 @@ export function PortalDetailsPage() {
     if (!form.contactNumber.trim()) next.contactNumber = 'Contact number is required'
     else if (!/^\+?[0-9][0-9\s-]{7,19}$/.test(form.contactNumber.trim()))
       next.contactNumber = 'Enter a valid contact number'
-    if (form.alternateContactNumber.trim() && !/^\+?[0-9][0-9\s-]{7,19}$/.test(form.alternateContactNumber.trim()))
-      next.alternateContactNumber = 'Enter a valid number, or leave it blank'
+    if (!form.alternateContactNumber.trim()) next.alternateContactNumber = 'Alternate contact number is required'
+    else if (!/^\+?[0-9][0-9\s-]{7,19}$/.test(form.alternateContactNumber.trim()))
+      next.alternateContactNumber = 'Enter a valid number'
     if (!form.dateOfBirth) next.dateOfBirth = 'Date of birth is required'
     else if (new Date(form.dateOfBirth) >= new Date()) next.dateOfBirth = 'Date of birth must be in the past'
     if (!form.gender) next.gender = 'Select your gender'
@@ -90,7 +96,7 @@ export function PortalDetailsPage() {
     try {
       const saved = await portalService.saveProfile(token, {
         ...form,
-        alternateContactNumber: form.alternateContactNumber.trim() || null,
+        alternateContactNumber: form.alternateContactNumber.trim(),
       })
       existing.setData(saved)
       await reloadOverview()
@@ -127,7 +133,7 @@ export function PortalDetailsPage() {
           on your Aadhaar card. Your education certificates are uploaded on the documents step.
         </p>
         {existing.data && (
-          <p className="mt-3 rounded border border-surface-line bg-surface-offwhite/70 px-3.5 py-2.5
+          <p className="mt-3 rounded border border-surface-line bg-surface-canvas px-3.5 py-2.5
             text-[12.5px] text-ink-muted">
             {locked
               ? `Submitted on ${formatDateTime(existing.data.submittedAt)} and reviewed by HR - these can no longer be changed here.`
@@ -155,15 +161,25 @@ export function PortalDetailsPage() {
               error={errors.contactNumber} onChange={set('contactNumber')} placeholder="9876543210"
               autoComplete="tel" />
           </Field>
-          <Field label="Alternate contact number" htmlFor="alternateContactNumber"
-            error={errors.alternateContactNumber} hint="Optional - a family member or second number.">
+          <Field label="Alternate contact number" htmlFor="alternateContactNumber" required
+            error={errors.alternateContactNumber} hint="A second number we can reach you on.">
             <TextInput id="alternateContactNumber" type="tel" value={form.alternateContactNumber}
               disabled={locked} error={errors.alternateContactNumber}
               onChange={set('alternateContactNumber')} />
           </Field>
           <Field label="Date of birth" htmlFor="dateOfBirth" required error={errors.dateOfBirth}>
-            <TextInput id="dateOfBirth" type="date" value={form.dateOfBirth} disabled={locked}
-              error={errors.dateOfBirth} onChange={set('dateOfBirth')} max="2015-12-31" />
+            {/* Our own calendar: the native one is browser chrome and cannot
+                be styled to match the app. */}
+            <DateField
+              id="dateOfBirth"
+              value={form.dateOfBirth}
+              disabled={locked}
+              error={Boolean(errors.dateOfBirth)}
+              onChange={(iso) => setValue('dateOfBirth', iso)}
+              max="2015-12-31"
+              yearsBack={70}
+              placeholder="Choose your date of birth"
+            />
           </Field>
           <Field label="Gender" htmlFor="gender" required error={errors.gender}>
             <Select id="gender" value={form.gender} disabled={locked} error={errors.gender}

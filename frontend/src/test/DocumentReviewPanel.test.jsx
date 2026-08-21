@@ -63,7 +63,9 @@ describe('DocumentReviewPanel', () => {
 
   it('marks documents that have not been reviewed yet', () => {
     renderPanel()
-    expect(screen.getAllByText('Not reviewed yet').length).toBeGreaterThan(0)
+    // The status pill carries this now; the old "Not reviewed yet" line said
+    // the same thing twice in the same row.
+    expect(screen.getAllByText('Awaiting review').length).toBeGreaterThan(0)
   })
 
   it('shows documents still waiting on the candidate', () => {

@@ -9,8 +9,8 @@ export function LockedPanel({ title, reason, backLabel = 'Back to my onboarding'
   const { token } = useParams()
   return (
     <section className="cf-card p-8 text-center">
-      <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-offwhite
-        text-ink-muted ring-1 ring-surface-line">
+      <span className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded bg-surface-canvas
+        text-ink-muted ring-1 ring-inset ring-surface-line">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"
           strokeLinecap="round" strokeLinejoin="round">
           <path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5V11Z" />

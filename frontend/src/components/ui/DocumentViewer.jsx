@@ -86,7 +86,7 @@ export function DocumentViewer({ open, onClose, apiPath, title, filename, conten
         aria-modal="true"
         aria-label={title || 'Document'}
         className="relative flex h-full max-h-[92vh] w-full max-w-4xl animate-slide-up flex-col
-          overflow-hidden rounded-card bg-white shadow-pop"
+          overflow-hidden rounded bg-white shadow-pop"
       >
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-line
           px-5 py-3.5">
@@ -104,7 +104,7 @@ export function DocumentViewer({ open, onClose, apiPath, title, filename, conten
             <button
               type="button"
               onClick={onClose}
-              className="rounded p-1.5 text-ink-muted transition hover:bg-surface-offwhite hover:text-ink"
+              className="rounded p-1.5 text-ink-muted transition hover:bg-surface-canvas hover:text-ink"
               aria-label="Close document"
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -114,7 +114,7 @@ export function DocumentViewer({ open, onClose, apiPath, title, filename, conten
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto bg-surface-offwhite p-3">
+        <div className="flex-1 overflow-auto bg-surface-canvas p-3">
           {state.status === 'loading' && <LoadingState label="Opening document" />}
 
           {state.status === 'error' && (

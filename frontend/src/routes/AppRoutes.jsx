@@ -5,8 +5,8 @@ import { CandidateDetailPage } from '../pages/hr/CandidateDetailPage'
 import { CandidatesPage } from '../pages/hr/CandidatesPage'
 import { DashboardPage } from '../pages/hr/DashboardPage'
 import { LoginPage } from '../pages/hr/LoginPage'
-import { OffersBondsPage } from '../pages/hr/OffersBondsPage'
-import { PortalBondPage } from '../pages/portal/PortalBondPage'
+import { OfferDetailPage } from '../pages/hr/OfferDetailPage'
+import { OffersPage } from '../pages/hr/OffersPage'
 import { PortalDetailsPage } from '../pages/portal/PortalDetailsPage'
 import { PortalDocumentsPage } from '../pages/portal/PortalDocumentsPage'
 import { PortalOfferPage } from '../pages/portal/PortalOfferPage'
@@ -32,7 +32,8 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/candidates" element={<CandidatesPage />} />
           <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
-          <Route path="/offers-bonds" element={<OffersBondsPage />} />
+          <Route path="/offers" element={<OffersPage />} />
+          <Route path="/offers/:candidateId" element={<OfferDetailPage />} />
         </Route>
       </Route>
 
@@ -44,7 +45,6 @@ export function AppRoutes() {
         <Route path="documents" element={<PortalDocumentsPage />} />
         <Route path="review" element={<PortalReviewPage />} />
         <Route path="offer" element={<PortalOfferPage />} />
-        <Route path="bond" element={<PortalBondPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

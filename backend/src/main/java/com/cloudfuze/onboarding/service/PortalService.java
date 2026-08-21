@@ -7,18 +7,14 @@ import com.cloudfuze.onboarding.dto.AcceptOfferRequest;
 import com.cloudfuze.onboarding.dto.CandidateProfileDto;
 import com.cloudfuze.onboarding.dto.CandidateProfileRequest;
 import com.cloudfuze.onboarding.dto.DocumentProgressDto;
-import com.cloudfuze.onboarding.dto.PortalBondDto;
 import com.cloudfuze.onboarding.dto.PortalDocumentsDto;
 import com.cloudfuze.onboarding.dto.PortalOfferDto;
 import com.cloudfuze.onboarding.dto.PortalOverviewDto;
 import com.cloudfuze.onboarding.dto.PortalStepDto;
-import com.cloudfuze.onboarding.dto.SignBondRequest;
 import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.exception.InvalidPortalTokenException;
 import com.cloudfuze.onboarding.exception.PortalTokenExpiredException;
 import com.cloudfuze.onboarding.model.AuditEventType;
-import com.cloudfuze.onboarding.model.Bond;
-import com.cloudfuze.onboarding.model.BondStatus;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentStatus;
@@ -59,8 +55,6 @@ public class PortalService {
     private final DocumentApprovalService approvalService;
     private final CandidateProfileService profileService;
     private final OfferService offerService;
-    private final BondService bondService;
-    private final BondSigningService bondSigningService;
     private final AuditService auditService;
     private final OnboardingMapper mapper;
     private final AppProperties appProperties;
@@ -69,8 +63,7 @@ public class PortalService {
     public PortalService(CandidateRepository candidateRepository, PortalTokenService portalTokenService,
                          DocumentService documentService, DocumentApprovalService approvalService,
                          CandidateProfileService profileService,
-                         OfferService offerService, BondService bondService,
-                         BondSigningService bondSigningService, AuditService auditService,
+                         OfferService offerService, AuditService auditService,
                          OnboardingMapper mapper, AppProperties appProperties, EmailProperties emailProperties) {
         this.candidateRepository = candidateRepository;
         this.portalTokenService = portalTokenService;
@@ -78,8 +71,6 @@ public class PortalService {
         this.approvalService = approvalService;
         this.profileService = profileService;
         this.offerService = offerService;
-        this.bondService = bondService;
-        this.bondSigningService = bondSigningService;
         this.auditService = auditService;
         this.mapper = mapper;
         this.appProperties = appProperties;
@@ -180,9 +171,8 @@ public class PortalService {
         List<CandidateDocument> documents = documentService.documentsOf(candidate.getId());
         DocumentProgressDto progress = mapper.progress(candidate, documents);
         Offer offer = offerService.find(candidate.getId()).orElse(null);
-        Bond bond = bondService.find(candidate.getId()).orElse(null);
 
-        boolean complete = candidate.getStage() == Stage.BOND_SIGNED;
+        boolean complete = candidate.getStage() == Stage.OFFER_ACCEPTED;
         boolean profileSubmitted = profileService.isComplete(candidate.getId());
         List<String> outstanding = candidate.getStage() == Stage.DOCS_PENDING
                 ? outstandingItems(candidate, documents, profileSubmitted)
@@ -194,10 +184,10 @@ public class PortalService {
                 candidate.getDepartment(),
                 candidate.getStage(),
                 candidate.getStage().getLabel(),
-                headlineFor(candidate.getStage()),
-                messageFor(candidate, progress, offer, bond, profileSubmitted,
+                headlineFor(candidate.getStage(), candidate.isSubmittedForReview()),
+                messageFor(candidate, progress, offer, profileSubmitted,
                         candidate.isSubmittedForReview()),
-                buildSteps(candidate, progress, offer, bond, profileSubmitted, candidate.isSubmittedForReview()),
+                buildSteps(candidate, progress, offer, profileSubmitted, candidate.isSubmittedForReview()),
                 currentStepFor(candidate.getStage()),
                 progress,
                 profileSubmitted,
@@ -209,7 +199,6 @@ public class PortalService {
                 outstanding,
                 editable,
                 candidate.getStage().isAtLeast(Stage.DOCS_APPROVED),
-                candidate.getStage().isAtLeast(Stage.OFFER_ACCEPTED),
                 complete,
                 candidate.getTokenExpiresAt(),
                 candidate.getCompletedAt(),
@@ -262,18 +251,6 @@ public class PortalService {
     }
 
     @Transactional(readOnly = true)
-    public PortalBondDto bond(String token) {
-        Candidate candidate = authenticate(token);
-        return bondService.portalView(candidate, token);
-    }
-
-    /** Not transactional on purpose - the signing orchestrator manages its own steps. */
-    public PortalBondDto signBond(String token, SignBondRequest request, String ipAddress, String userAgent) {
-        Candidate candidate = authenticate(token);
-        return bondSigningService.sign(candidate, token, request, ipAddress, userAgent);
-    }
-
-    @Transactional(readOnly = true)
     public PortalDocumentsDto documentsView(Candidate candidate, String token) {
         List<CandidateDocument> documents = documentService.documentsOf(candidate.getId());
         DocumentProgressDto progress = mapper.progress(candidate, documents);
@@ -306,17 +283,15 @@ public class PortalService {
      * dangles a padlocked stage or a completed one in front of them.
      */
     private List<PortalStepDto> buildSteps(Candidate candidate, DocumentProgressDto progress, Offer offer,
-                                           Bond bond, boolean profileSubmitted, boolean submitted) {
+                                           boolean profileSubmitted, boolean submitted) {
         Stage stage = candidate.getStage();
         return switch (stage) {
             case DOCS_PENDING -> List.of(new PortalStepDto("documents", "Details & Documents",
                     PortalStepDto.CURRENT, documentStatusText(progress, profileSubmitted, submitted), null));
             case DOCS_APPROVED -> List.of(new PortalStepDto("offer", "Offer Letter",
                     PortalStepDto.CURRENT, offerStatusText(stage, offer), null));
-            case OFFER_ACCEPTED -> List.of(new PortalStepDto("bond", "Bond Signing",
-                    PortalStepDto.CURRENT, bondStatusText(stage, bond), null));
-            case BOND_SIGNED -> List.of(new PortalStepDto("bond", "Bond Signing",
-                    PortalStepDto.COMPLETED, bondStatusText(stage, bond), null));
+            case OFFER_ACCEPTED -> List.of(new PortalStepDto("offer", "Offer Letter",
+                    PortalStepDto.COMPLETED, offerStatusText(stage, offer), null));
         };
     }
 
@@ -325,7 +300,7 @@ public class PortalService {
         return switch (stage) {
             case DOCS_PENDING -> "documents";
             case DOCS_APPROVED -> "offer";
-            case OFFER_ACCEPTED, BOND_SIGNED -> "bond";
+            case OFFER_ACCEPTED -> "offer";
         };
     }
 
@@ -360,26 +335,20 @@ public class PortalService {
         return offer.getStatus() == OfferStatus.VIEWED ? "Awaiting your acceptance" : "Ready to review";
     }
 
-    private String bondStatusText(Stage stage, Bond bond) {
-        if (stage == Stage.BOND_SIGNED) {
-            return "Signed";
+    private String headlineFor(Stage stage, boolean submitted) {
+        /* Once it is submitted the work is done, so the headline must not keep
+           telling the candidate to complete it. */
+        if (stage == Stage.DOCS_PENDING && submitted) {
+            return "Thanks - everything is with HR";
         }
-        if (bond == null) {
-            return "Being prepared by HR";
-        }
-        return bond.getStatus() == BondStatus.FAILED ? "Signature not completed" : "Ready to sign";
-    }
-
-    private String headlineFor(Stage stage) {
         return switch (stage) {
             case DOCS_PENDING -> "Complete your details and documents";
             case DOCS_APPROVED -> "Review and accept your offer letter";
-            case OFFER_ACCEPTED -> "Sign your employment bond";
-            case BOND_SIGNED -> "Onboarding Complete";
+            case OFFER_ACCEPTED -> "Onboarding Complete";
         };
     }
 
-    private String messageFor(Candidate candidate, DocumentProgressDto progress, Offer offer, Bond bond,
+    private String messageFor(Candidate candidate, DocumentProgressDto progress, Offer offer,
                               boolean profileSubmitted, boolean submitted) {
         return switch (candidate.getStage()) {
             case DOCS_PENDING -> submitted
@@ -391,11 +360,8 @@ public class PortalService {
             case DOCS_APPROVED -> offer == null
                     ? "Your documents are approved. HR is preparing your offer letter."
                     : "Your documents are approved. Review your offer letter and accept it to continue.";
-            case OFFER_ACCEPTED -> bond == null
-                    ? "Thanks for accepting your offer. HR is preparing your employment bond."
-                    : "One step left: review and sign your employment bond through SignatureOne.";
-            case BOND_SIGNED -> "Everything is done. Welcome to CloudFuze - your HR team will be in touch "
-                    + "with your joining details.";
+            case OFFER_ACCEPTED -> "Everything is done. Welcome to CloudFuze - your HR team will be in "
+                    + "touch with your joining details.";
         };
     }
 

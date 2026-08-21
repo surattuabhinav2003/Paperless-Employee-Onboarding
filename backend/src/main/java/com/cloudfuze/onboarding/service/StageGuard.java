@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * React has no effect on what is actually permitted.
  *
  * <pre>
- * docs_pending -> docs_approved -> offer_accepted -> bond_signed
+ * docs_pending -> docs_approved -> offer_accepted (complete)
  * </pre>
  */
 @Component
@@ -32,29 +32,16 @@ public class StageGuard {
         }
     }
 
-    /** Accepting the offer is only valid in exactly the docs_approved stage. */
+    /**
+     * Accepting the offer is only valid in exactly the docs_approved stage, and
+     * only once - acceptance is the final transition in the workflow.
+     */
     public void requireOfferAcceptable(Candidate candidate) {
         if (candidate.getStage().isAtLeast(Stage.OFFER_ACCEPTED)) {
             throw new BusinessRuleException("OFFER_ALREADY_ACCEPTED",
-                    "This offer has already been accepted. You can continue with bond signing.");
+                    "This offer has already been accepted. Your onboarding is complete.");
         }
         requireOfferAccess(candidate);
-    }
-
-    /** Reading the bond requires an accepted offer. */
-    public void requireBondAccess(Candidate candidate) {
-        if (!candidate.getStage().isAtLeast(Stage.OFFER_ACCEPTED)) {
-            throw StageForbiddenException.bondLocked(candidate.getStage());
-        }
-    }
-
-    /** Signing is only valid once, in exactly the offer_accepted stage. */
-    public void requireBondSignable(Candidate candidate) {
-        if (candidate.getStage() == Stage.BOND_SIGNED) {
-            throw new BusinessRuleException("BOND_ALREADY_SIGNED",
-                    "Your bond has already been signed. Onboarding is complete.");
-        }
-        requireBondAccess(candidate);
     }
 
     /** HR document decisions are only meaningful while documents are pending. */

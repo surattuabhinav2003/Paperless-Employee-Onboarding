@@ -1,25 +1,24 @@
-import { TONE_CLASSES } from '../../utils/status'
+import { TONE_CLASSES, TONE_BARS } from '../../utils/status'
 
-export function StatusPill({ label, tone = 'grey', icon = null, className = '' }) {
+/**
+ * The app's status shape: a tinted chip with a saturated dot. Both the tint and
+ * the dot come from one modifier class in `index.css`, so a state always looks
+ * the same wherever it appears - pipeline, candidate record, portal.
+ */
+export function StatusPill({ label, tone = 'grey', className = '' }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1
-        text-[11.5px] font-medium leading-none ${TONE_CLASSES[tone] || TONE_CLASSES.grey} ${className}`}
-    >
-      {icon}
+    <span className={`cf-tag ${TONE_CLASSES[tone] || TONE_CLASSES.grey} ${className}`}>
+      <i aria-hidden="true" />
       {label}
     </span>
   )
 }
 
 export function Dot({ tone = 'grey' }) {
-  const colors = {
-    grey: 'bg-ink-muted/50',
-    blue: 'bg-brand',
-    amber: 'bg-accent-orange',
-    green: 'bg-accent-green',
-    teal: 'bg-accent-teal',
-    red: 'bg-accent-red',
-  }
-  return <span className={`h-1.5 w-1.5 rounded-full ${colors[tone] || colors.grey}`} />
+  return (
+    <span
+      className={TONE_BARS[tone] || TONE_BARS.grey}
+      style={{ width: 6, height: 6, borderRadius: 999, display: 'inline-block' }}
+    />
+  )
 }

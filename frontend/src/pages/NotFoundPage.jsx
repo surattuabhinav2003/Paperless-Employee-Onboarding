@@ -4,7 +4,7 @@ import { Logo } from '../components/ui/Logo'
 
 export function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-offwhite px-4 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-canvas px-4 text-center">
       <Logo subtitle="Onboarding" />
       <div>
         <h1 className="text-[22px] font-semibold text-ink">This page does not exist</h1>

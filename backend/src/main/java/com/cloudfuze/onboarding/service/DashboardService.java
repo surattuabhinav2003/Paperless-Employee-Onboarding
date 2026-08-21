@@ -2,7 +2,6 @@ package com.cloudfuze.onboarding.service;
 
 import com.cloudfuze.onboarding.audit.AuditService;
 import com.cloudfuze.onboarding.dto.DashboardStatsDto;
-import com.cloudfuze.onboarding.model.BondStatus;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentStatus;
@@ -10,7 +9,6 @@ import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.OfferStatus;
 import com.cloudfuze.onboarding.model.RequiredDocument;
 import com.cloudfuze.onboarding.model.Stage;
-import com.cloudfuze.onboarding.repository.BondRepository;
 import com.cloudfuze.onboarding.repository.CandidateDocumentRepository;
 import com.cloudfuze.onboarding.repository.CandidateRepository;
 import com.cloudfuze.onboarding.repository.OfferRepository;
@@ -30,20 +28,17 @@ public class DashboardService {
     private final CandidateRepository candidateRepository;
     private final CandidateDocumentRepository documentRepository;
     private final OfferRepository offerRepository;
-    private final BondRepository bondRepository;
     private final CandidateService candidateService;
     private final AuditService auditService;
 
     public DashboardService(CandidateRepository candidateRepository,
                             CandidateDocumentRepository documentRepository,
                             OfferRepository offerRepository,
-                            BondRepository bondRepository,
                             CandidateService candidateService,
                             AuditService auditService) {
         this.candidateRepository = candidateRepository;
         this.documentRepository = documentRepository;
         this.offerRepository = offerRepository;
-        this.bondRepository = bondRepository;
         this.candidateService = candidateService;
         this.auditService = auditService;
     }
@@ -51,9 +46,9 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardStatsDto stats() {
         long totalCandidates = candidateRepository.count();
-        long activeCandidates = candidateRepository.countByStageNot(Stage.BOND_SIGNED);
+        long activeCandidates = candidateRepository.countByStageNot(Stage.OFFER_ACCEPTED);
         long awaitingReview = documentRepository.countByStatus(DocumentStatus.SUBMITTED);
-        long bondsSigned = bondRepository.countByStatus(BondStatus.SIGNED);
+        long onboardingComplete = candidateRepository.countByStage(Stage.OFFER_ACCEPTED);
         long offersAwaitingAcceptance = offerRepository.countByStatus(OfferStatus.SENT)
                 + offerRepository.countByStatus(OfferStatus.VIEWED);
 
@@ -66,7 +61,7 @@ public class DashboardService {
                 activeCandidates,
                 countDocumentsWaitingOnCandidates(),
                 awaitingReview,
-                bondsSigned,
+                onboardingComplete,
                 totalCandidates,
                 offersAwaitingAcceptance,
                 stageBreakdown,

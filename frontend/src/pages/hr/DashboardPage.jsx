@@ -4,12 +4,23 @@ import { PageHeader } from '../../components/PageHeader'
 import { CandidateTable } from '../../components/hr/CandidateTable'
 import { InviteLinkModal } from '../../components/hr/InviteLinkModal'
 import { NewCandidateModal } from '../../components/hr/NewCandidateModal'
-import { StatCard } from '../../components/hr/StatCard'
 import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
 import { useAsync } from '../../hooks/useAsync'
 import { hrService } from '../../services/hrService'
 
+const ICONS = {
+  users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
+  upload: 'M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
+  review: 'M14 3v5h5M6 3h9l5 5v13H6V3Zm3 9h6M9 16h4',
+  done: 'M20 6 9 17l-5-5',
+}
+
+/**
+ * The dashboard is four numbers and the recent candidates - nothing else. The
+ * labels are the explanation, so there is no helper copy under them, and the
+ * detail lives one click away on the candidate record.
+ */
 export function DashboardPage() {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
@@ -19,6 +30,14 @@ export function DashboardPage() {
   const metadata = useAsync(() => hrService.metadata(), [])
 
   const data = stats.data
+  const loading = stats.loading && !data
+
+  const figures = [
+    { key: 'active', label: 'Active candidates', value: data?.activeCandidates, icon: 'users', tone: 'blue' },
+    { key: 'pending', label: 'Documents pending', value: data?.documentsPending, icon: 'upload', tone: 'amber' },
+    { key: 'review', label: 'Awaiting review', value: data?.awaitingReview, icon: 'review', tone: 'teal' },
+    { key: 'done', label: 'Onboarding complete', value: data?.onboardingComplete, icon: 'done', tone: 'green' },
+  ]
 
   const onCreated = (created) => {
     setCreateOpen(false)
@@ -26,103 +45,59 @@ export function DashboardPage() {
     stats.reload().catch(() => {})
   }
 
+  if (stats.error && !data) {
+    return (
+      <div className="cf-card">
+        <ErrorState
+          message={stats.error.message}
+          action={<Button onClick={() => stats.reload()}>Try again</Button>}
+        />
+      </div>
+    )
+  }
+
   return (
     <>
       <PageHeader
         breadcrumb="HR console"
         title="Onboarding dashboard"
-        subtitle="Live view of every candidate in the paperless onboarding flow - documents, offers and bonds."
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => navigate('/candidates')}>
-              View full pipeline
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>New candidate</Button>
-          </>
-        }
+        actions={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
       />
 
-      {stats.error && !data ? (
-        <div className="cf-card">
-          <ErrorState
-            message={stats.error.message}
-            action={<Button onClick={() => stats.reload()}>Try again</Button>}
-          />
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              label="Active candidates"
-              value={data?.activeCandidates ?? 0}
-              hint={`${data?.totalCandidates ?? 0} total in the pipeline`}
-              icon="users"
-              tone="brand"
-              loading={stats.loading && !data}
-            />
-            <StatCard
-              label="Documents pending"
-              value={data?.documentsPending ?? 0}
-              hint="Waiting on candidates to upload or re-upload"
-              icon="upload"
-              tone="amber"
-              loading={stats.loading && !data}
-            />
-            <StatCard
-              label="Awaiting review"
-              value={data?.awaitingReview ?? 0}
-              hint="Open a candidate to verify or reject their documents"
-              icon="review"
-              tone="blue"
-              loading={stats.loading && !data}
-            />
-            <StatCard
-              label="Bonds signed"
-              value={data?.bondsSigned ?? 0}
-              hint={`${data?.offersAwaitingAcceptance ?? 0} offers awaiting acceptance`}
-              icon="signed"
-              tone="green"
-              loading={stats.loading && !data}
-            />
-          </div>
-
-          <section className="mt-6 cf-card overflow-hidden">
-            <header className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-line
-              px-5 py-4">
-              <div>
-                <h2 className="text-[15px] font-semibold text-ink">Candidate pipeline</h2>
-                <p className="mt-0.5 text-[12.5px] text-ink-muted">
-                  Most recent candidates and where each one stands
-                </p>
-              </div>
-              <Button variant="subtle" size="sm" onClick={() => navigate('/candidates')}>
-                Open pipeline
-              </Button>
-            </header>
-            <CandidateTable
-              compact
-              candidates={data?.recentCandidates || []}
-              loading={stats.loading && !data}
-              onOpen={(candidate) => navigate(`/candidates/${candidate.id}`)}
-              emptyAction={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
-            />
-          </section>
-
-          <section className="mt-5 cf-card p-5">
-            <h2 className="text-[15px] font-semibold text-ink">Stage breakdown</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {Object.entries(data?.stageBreakdown || {}).map(([stage, count]) => (
-                <div key={stage} className="rounded border border-surface-line bg-surface-offwhite/60 px-4 py-3">
-                  <p className="text-[11.5px] font-medium uppercase tracking-[0.1em] text-ink-muted">
-                    {stage.replace(/_/g, ' ')}
-                  </p>
-                  <p className="mt-1 text-[20px] font-semibold text-ink">{count}</p>
-                </div>
-              ))}
+      <div className="c-dash">
+        <section className="c-figs">
+          {figures.map((figure) => (
+            <div key={figure.key} className={`c-fig c-fig--${figure.tone}`}>
+              <span className="c-fig-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d={ICONS[figure.icon]} />
+                </svg>
+              </span>
+              {loading
+                ? <span className="c-fig-skel cf-skeleton" />
+                : <span className="c-fig-n">{figure.value ?? 0}</span>}
+              <span className="c-fig-l">{figure.label}</span>
             </div>
-          </section>
-        </>
-      )}
+          ))}
+        </section>
+
+        <section className="c-panel">
+          <header className="c-panel-head">
+            <h2>Recent candidates</h2>
+            <Button variant="subtle" size="sm" onClick={() => navigate('/candidates')}>
+              View all
+            </Button>
+          </header>
+          <CandidateTable
+            compact
+            candidates={data?.recentCandidates || []}
+            loading={loading}
+            onOpen={(candidate) => navigate(`/candidates/${candidate.id}`)}
+            emptyAction={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
+          />
+        </section>
+      </div>
 
       <NewCandidateModal
         open={createOpen}
@@ -137,7 +112,6 @@ export function DashboardPage() {
         candidateName={invitation?.candidateName}
         onClose={() => setInvitation(null)}
       />
-
     </>
   )
 }

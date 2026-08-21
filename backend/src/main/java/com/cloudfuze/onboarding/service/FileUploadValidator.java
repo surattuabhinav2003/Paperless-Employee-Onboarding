@@ -8,7 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Paths;
 import java.util.Locale;
 
-/** Central file validation for every upload path (candidate, offer, bond). */
+/** Central file validation for every upload path (candidate documents, offer). */
 @Component
 public class FileUploadValidator {
 

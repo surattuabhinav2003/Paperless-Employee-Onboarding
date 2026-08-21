@@ -23,11 +23,6 @@ public enum AuditEventType {
     OFFER_UPLOADED("offer_uploaded", "Offer letter uploaded"),
     OFFER_VIEWED("offer_viewed", "Offer letter viewed"),
     OFFER_ACCEPTED("offer_accepted", "Offer letter accepted"),
-    BOND_UPLOADED("bond_uploaded", "Bond document uploaded"),
-    BOND_UNLOCKED("bond_unlocked", "Bond stage unlocked"),
-    SIGNATURE_INITIATED("signature_initiated", "Signature session initiated"),
-    BOND_SIGNED("bond_signed", "Bond signed"),
-    SIGNATURE_FAILED("signature_failed", "Signature failed"),
     ONBOARDING_COMPLETED("onboarding_completed", "Onboarding completed");
 
     private final String code;

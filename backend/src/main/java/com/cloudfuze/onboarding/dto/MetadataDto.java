@@ -12,8 +12,7 @@ public record MetadataDto(
         List<Option> bloodGroups,
         List<Option> educationCourses,
         long maxUploadSizeBytes,
-        List<String> allowedExtensions,
-        String signatureProvider
+        List<String> allowedExtensions
 ) {
     /**
      * @param group optional heading the option belongs under, e.g. the document

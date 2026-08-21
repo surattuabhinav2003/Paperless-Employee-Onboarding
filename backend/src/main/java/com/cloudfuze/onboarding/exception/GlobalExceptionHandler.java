@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
@@ -100,6 +102,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of(409, "DATA_CONFLICT",
                         "That record conflicts with existing data.", request.getRequestURI()));
+    }
+
+    /**
+     * An unknown URL is a 404, not a server fault. Without this the catch-all
+     * below would report "something went wrong on our side" for a simple typo -
+     * or for a route that no longer exists.
+     */
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNoHandler(Exception ex, HttpServletRequest request) {
+        log.debug("No handler for {} {}", request.getMethod(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(404, "NOT_FOUND",
+                        "That endpoint does not exist.", request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

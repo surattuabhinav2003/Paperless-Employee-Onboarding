@@ -32,8 +32,8 @@ import java.util.UUID;
 
 /**
  * Offer letter handling. HR can prepare the offer at any time, but the candidate
- * cannot reach it until their documents are approved, and acceptance is the only
- * thing that unlocks bond signing.
+ * cannot reach it until their documents are approved, and acceptance is the final
+ * step of onboarding.
  */
 @Service
 public class OfferService {
@@ -127,8 +127,8 @@ public class OfferService {
         }
         boolean canAccept = candidate.getStage() == Stage.DOCS_APPROVED && offer.getStatus() != OfferStatus.ACCEPTED;
         String message = switch (offer.getStatus()) {
-            case ACCEPTED -> "You have accepted this offer. Continue to bond signing to finish.";
-            case VIEWED -> "Review the offer letter and accept it to continue to bond signing.";
+            case ACCEPTED -> "You have accepted this offer. Your onboarding is complete.";
+            case VIEWED -> "Review the offer letter and accept it to complete your onboarding.";
             case SENT -> "Your offer letter is ready. Open it to review the details.";
         };
         return new PortalOfferDto(true, offer.getStatus(), offer.getOriginalFilename(), offer.getSentAt(),
@@ -157,7 +157,10 @@ public class OfferService {
         return portalView(candidate, token);
     }
 
-    /** Candidate acceptance. This is the only transition to offer_accepted. */
+    /**
+     * Candidate acceptance. This is the only transition to offer_accepted, which
+     * is the terminal stage - accepting the offer completes onboarding.
+     */
     @Transactional
     public PortalOfferDto accept(Candidate candidate, String token, AcceptOfferRequest request,
                                 String ipAddress, String userAgent) {
@@ -179,6 +182,7 @@ public class OfferService {
         offerRepository.save(offer);
 
         candidate.setStage(Stage.OFFER_ACCEPTED);
+        candidate.setCompletedAt(now);
         candidateRepository.save(candidate);
 
         Map<String, Object> metadata = new LinkedHashMap<>();
@@ -187,10 +191,10 @@ public class OfferService {
         metadata.put("userAgent", userAgent == null ? "unknown" : userAgent);
         auditService.recordCandidateEvent(candidate.getId(), AuditEventType.OFFER_ACCEPTED, candidate.getEmail(),
                 ipAddress, offer.getOriginalFilename(), metadata);
-        auditService.recordSystemEvent(candidate.getId(), AuditEventType.BOND_UNLOCKED,
-                Map.of("stage", Stage.OFFER_ACCEPTED.getCode()));
+        auditService.recordSystemEvent(candidate.getId(), AuditEventType.ONBOARDING_COMPLETED,
+                Map.of("stage", Stage.OFFER_ACCEPTED.getCode(), "completedAt", now.toString()));
 
-        log.info("Candidate {} accepted their offer - bond stage unlocked", candidate.getEmail());
+        log.info("Candidate {} accepted their offer - onboarding complete", candidate.getEmail());
         return portalView(candidate, token);
     }
 

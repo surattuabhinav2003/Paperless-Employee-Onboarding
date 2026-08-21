@@ -1,16 +1,22 @@
+/**
+ * The page header. Not a dark slab and not bare canvas: a soft white-to-blue
+ * wash with a brand gradient hairline along the top edge, so every page opens
+ * with colour without a heavy block of it.
+ */
 export function PageHeader({ title, subtitle, actions, breadcrumb, className = '' }) {
   return (
-    <div className={`mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${className}`}>
-      <div className="min-w-0">
+    <header className={`c-head ${className}`}>
+      <div style={{ minWidth: 0 }}>
         {breadcrumb && (
-          <p className="mb-1.5 text-[11.5px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+          <p className="c-head-eyebrow">
+            <i aria-hidden="true" />
             {breadcrumb}
           </p>
         )}
-        <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-ink">{title}</h1>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-[13.5px] leading-6 text-ink-muted">{subtitle}</p>}
+        <h1>{title}</h1>
+        {subtitle && <p className="c-head-sub">{subtitle}</p>}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2.5">{actions}</div>}
-    </div>
+      {actions && <div className="c-head-actions">{actions}</div>}
+    </header>
   )
 }

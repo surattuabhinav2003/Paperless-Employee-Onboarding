@@ -5,7 +5,7 @@ import { CopyField } from '../ui/CopyField'
 import { StatusPill } from '../ui/StatusPill'
 import { useToast } from '../../context/ToastContext'
 import { hrService } from '../../services/hrService'
-import { formatDateTime } from '../../utils/format'
+import { formatDate, formatDateTime } from '../../utils/format'
 
 /**
  * The candidate's onboarding link.
@@ -69,9 +69,8 @@ export function PortalLinkCard({ candidate, onChanged }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-[15px] font-semibold text-ink">Onboarding link</h3>
-          <p className="mt-1 max-w-xl text-[12.5px] leading-5 text-ink-muted">
-            One link covers documents, offer and bond. Show it to copy or share it directly, or resend the
-            invitation email.
+          <p className="mt-1 text-[12.5px] text-ink-muted">
+            One link covers documents and the offer letter.
           </p>
         </div>
         <StatusPill
@@ -80,28 +79,24 @@ export function PortalLinkCard({ candidate, onChanged }) {
         />
       </div>
 
-      <dl className="mt-4 grid gap-x-6 gap-y-2.5 text-[12.5px] sm:grid-cols-3">
-        <div className="min-w-0">
-          <dt className="text-ink-muted">Emailed to</dt>
-          <dd className="mt-0.5 truncate font-medium text-ink-body" title={candidate.email}>
-            {candidate.email}
-          </dd>
+      <dl className="r-link-meta">
+        <div style={{ minWidth: 0 }}>
+          <dt>Emailed to</dt>
+          <dd title={candidate.email}>{candidate.email}</dd>
         </div>
         <div>
-          <dt className="text-ink-muted">Last sent</dt>
-          <dd className="mt-0.5 font-medium text-ink-body">
-            {candidate.invitationSentAt ? formatDateTime(candidate.invitationSentAt) : 'Not sent'}
-          </dd>
+          <dt>Last sent</dt>
+          <dd>{candidate.invitationSentAt ? formatDate(candidate.invitationSentAt) : 'Not sent'}</dd>
         </div>
         <div>
-          <dt className="text-ink-muted">Expires</dt>
-          <dd className="mt-0.5 font-medium text-ink-body">{formatDateTime(candidate.tokenExpiresAt)}</dd>
+          <dt>Expires</dt>
+          <dd>{formatDate(candidate.tokenExpiresAt)}</dd>
         </div>
       </dl>
 
-      {link ? (
+      {link && (
         <div
-          className={`mt-4 rounded-card border p-4 ${
+          className={`mt-4 rounded border p-4 ${
             regenerated ? 'border-accent-green/30 bg-[#F3FCF7]' : 'border-brand/25 bg-brand-tint/50'
           }`}
         >
@@ -123,30 +118,36 @@ export function PortalLinkCard({ candidate, onChanged }) {
           </p>
           <CopyField className="mt-3" value={link.portalUrl} />
         </div>
-      ) : (
-        <p className="mt-4 text-[12px] text-ink-muted">
-          The link is hidden until you ask for it, and every time it is shown gets recorded in the audit
-          trail.
-        </p>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+      <div className="r-link-actions">
         {!link && (
           <Button
             loading={busy === 'show'}
             disabled={!linkActive}
             onClick={show}
-            title={linkActive ? undefined : 'The link has expired - generate a new one'}
+            title={
+              linkActive
+                ? 'Every reveal is recorded in the audit trail'
+                : 'The link has expired - generate a new one'
+            }
           >
             Show link
           </Button>
         )}
-        <Button variant="subtle" loading={busy === 'resend'} onClick={resend}>
-          Resend invitation email
-        </Button>
-        <Button variant="secondary" loading={busy === 'regenerate'} onClick={() => setConfirmOpen(true)}>
-          Generate new link
-        </Button>
+        <div className="r-link-secondary">
+          <Button variant="subtle" size="sm" loading={busy === 'resend'} onClick={resend}>
+            Resend email
+          </Button>
+          <Button
+            variant="subtle"
+            size="sm"
+            loading={busy === 'regenerate'}
+            onClick={() => setConfirmOpen(true)}
+          >
+            New link
+          </Button>
+        </div>
       </div>
 
       <ConfirmDialog

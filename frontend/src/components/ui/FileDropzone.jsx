@@ -13,6 +13,8 @@ export function FileDropzone({
   compact = false,
   disabled = false,
   label = 'Choose file',
+  /* The format line is worth stating once on a page, not on every dropzone. */
+  showHint = true,
 }) {
   const inputRef = useRef(null)
   const [dragging, setDragging] = useState(false)
@@ -59,8 +61,8 @@ export function FileDropzone({
         className={`flex cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed
           text-center transition
           ${compact ? 'gap-1 px-4 py-4' : 'gap-2 px-6 py-8'}
-          ${disabled ? 'cursor-not-allowed border-surface-line bg-surface-offwhite/60 opacity-60' : ''}
-          ${dragging ? 'border-brand bg-brand-tint' : 'border-surface-line bg-surface-offwhite/60 hover:border-brand/60 hover:bg-brand-tint/50'}`}
+          ${disabled ? 'cursor-not-allowed border-surface-line bg-surface-canvas opacity-60' : ''}
+          ${dragging ? 'border-brand bg-brand-tint' : 'border-surface-line bg-surface-canvas hover:border-brand/60 hover:bg-brand-tint/40'}`}
       >
         <svg
           viewBox="0 0 24 24"
@@ -76,8 +78,9 @@ export function FileDropzone({
           {label}
         </span>
         <span className="text-[11.5px] text-ink-muted">
-          Drag and drop, or click to browse &middot; {allowedExtensions.join(', ')} up to{' '}
-          {formatBytes(maxBytes)}
+          {showHint
+            ? `Drag and drop, or click to browse · ${allowedExtensions.join(', ')} up to ${formatBytes(maxBytes)}`
+            : 'Drag and drop, or click to browse'}
         </span>
         <input
           ref={inputRef}

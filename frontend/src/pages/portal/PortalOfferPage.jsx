@@ -84,7 +84,7 @@ export function PortalOfferPage() {
       setData(updated)
       setConfirmOpen(false)
       await reloadOverview()
-      toast.success('Offer accepted', 'Bond signing is now unlocked as your final step.')
+      toast.success('Offer accepted', 'That was the final step - your onboarding is complete.')
     } catch (err) {
       setConfirmOpen(false)
       toast.apiError(err, 'We could not record your acceptance')
@@ -124,7 +124,7 @@ export function PortalOfferPage() {
           </div>
         </header>
 
-        <div className="bg-surface-offwhite/70 p-3">
+        <div className="bg-surface-canvas p-3">
           <iframe
             title="Offer letter"
             src={fileUrl(offer.downloadUrl)}
@@ -140,7 +140,7 @@ export function PortalOfferPage() {
       {accepted ? (
         <section className="cf-card border-accent-green/40 bg-[#F3FCF7] p-5 sm:p-6">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded
               bg-accent-green text-white">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4"
                 strokeLinecap="round" strokeLinejoin="round">
@@ -150,8 +150,8 @@ export function PortalOfferPage() {
             <div>
               <h3 className="text-[15px] font-semibold text-ink">Offer accepted</h3>
               <p className="mt-1 text-[13px] leading-6 text-ink-body">
-                Accepted by {offer.acceptedAt ? formatDateTime(offer.acceptedAt) : 'you'}. Bond signing is
-                unlocked - it is the final step of your onboarding.
+                Accepted by {offer.acceptedAt ? formatDateTime(offer.acceptedAt) : 'you'}. That was the
+                final step - your onboarding is complete.
               </p>
             </div>
           </div>
@@ -179,7 +179,7 @@ export function PortalOfferPage() {
               checked={agreed}
               onChange={(event) => setAgreed(event.target.checked)}
               label="I have read and accept the terms of this offer letter"
-              description="You will still need to sign your employment bond as the final step."
+              description="This is the final step of your onboarding."
             />
           </div>
 

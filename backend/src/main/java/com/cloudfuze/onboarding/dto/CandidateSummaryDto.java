@@ -1,6 +1,5 @@
 package com.cloudfuze.onboarding.dto;
 
-import com.cloudfuze.onboarding.model.BondStatus;
 import com.cloudfuze.onboarding.model.OfferStatus;
 import com.cloudfuze.onboarding.model.Stage;
 
@@ -22,9 +21,7 @@ public record CandidateSummaryDto(
         int documentsRejected,
         int documentsMissing,
         OfferStatus offerStatus,
-        BondStatus bondStatus,
         boolean offerPrepared,
-        boolean bondPrepared,
         Instant submittedForReviewAt,
         Instant invitationSentAt,
         Instant tokenExpiresAt,

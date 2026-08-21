@@ -15,7 +15,7 @@
     <artifactId>onboarding-portal</artifactId>
     <version>1.0.0</version>
     <name>CloudFuze HR Onboarding Portal</name>
-    <description>Paperless HR onboarding portal: documents, offer, bond signing</description>
+    <description>Paperless HR onboarding portal: documents and offer acceptance</description>
 
     <properties>
         <java.version>21</java.version>

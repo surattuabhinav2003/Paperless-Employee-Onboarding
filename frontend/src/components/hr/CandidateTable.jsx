@@ -1,18 +1,66 @@
-import { ProgressBar } from '../ui/ProgressBar'
 import { StatusPill } from '../ui/StatusPill'
 import { SkeletonRows } from '../ui/Spinner'
 import { EmptyState } from '../ui/EmptyState'
 import { formatDate, formatRelative, initialsOf } from '../../utils/format'
-import { documentProgressMeta, pipelineStatusMeta } from '../../utils/status'
+import { documentProgressMeta, pipelineStatusMeta, statusMeaning } from '../../utils/status'
+import { hueOf } from '../../utils/avatar'
+
+/* Above this many requested documents the segments get too thin to read, so
+   the meter falls back to a proportional bar. */
+const MAX_SEGMENTS = 10
 
 /**
- * The HR pipeline. A whole row is the click target - offer and bond detail lives
- * on the candidate page rather than as extra columns here.
+ * One document per segment, coloured by that document's own state. A single bar
+ * can only say "how far along"; this says what the progress is made of - which
+ * documents are verified, which are waiting on HR, which were sent back. The
+ * exact breakdown is on the cell's tooltip rather than spelled out in the row.
+ */
+function DocumentMeter({ candidate }) {
+  const docs = documentProgressMeta(candidate)
+  const total = docs.total
+  const verified = candidate.documentsVerified || 0
+  const submitted = candidate.documentsSubmitted || 0
+  const rejected = candidate.documentsRejected || 0
+  const done = total > 0 && verified === total
+
+  return (
+    <span className="c-meter" title={docs.caption}>
+      {total > 0 && total <= MAX_SEGMENTS ? (
+        <span className="c-meter-track" role="img" aria-label={docs.caption}>
+          {Array.from({ length: total }, (_, index) => {
+            let kind = ''
+            if (index < verified) kind = ' c-seg--verified'
+            else if (index < verified + submitted) kind = ' c-seg--review'
+            else if (index < verified + submitted + rejected) kind = ' c-seg--rejected'
+            return <span key={index} className={`c-seg${kind}`} />
+          })}
+        </span>
+      ) : (
+        <span className="c-meter-bar">
+          <span
+            style={{
+              width: total > 0 ? `${Math.round((docs.uploaded / total) * 100)}%` : '0%',
+              background: done ? 'var(--green-500)' : 'var(--blue-500)',
+            }}
+          />
+        </span>
+      )}
+      <span className={`c-meter-n${done ? ' is-done' : ''}`}>
+        {docs.uploaded}/{total}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * The candidate record list. Grid-aligned rather than a <table>, so each row can
+ * carry a stage-coloured edge and a ringed avatar, and so the same rows can
+ * restack as cards on a narrow screen instead of scrolling sideways.
  */
 export function CandidateTable({ candidates = [], loading = false, onOpen, emptyAction, compact = false }) {
   if (loading) {
     return (
-      <div className="p-5">
+      <div style={{ padding: 20 }}>
         <SkeletonRows rows={6} />
       </div>
     )
@@ -30,129 +78,61 @@ export function CandidateTable({ candidates = [], loading = false, onOpen, empty
   }
 
   return (
-    <div className="cf-scroll-x">
-      <table className="w-full min-w-[700px] border-collapse text-left">
-        <thead>
-          <tr className="border-b border-surface-line bg-surface-offwhite/70">
-            <th className="cf-th py-2.5 pl-5">Candidate</th>
-            <th className="cf-th py-2.5">Role</th>
-            <th className="cf-th py-2.5">Stage</th>
-            <th className="cf-th py-2.5">Documents</th>
-            {!compact && <th className="cf-th py-2.5">Created</th>}
-            <th className="cf-th w-10 py-2.5" aria-label="Open candidate" />
-          </tr>
-        </thead>
-        <tbody>
-          {candidates.map((candidate) => {
-            const status = pipelineStatusMeta(candidate)
-            const docs = documentProgressMeta(candidate)
-            const complete = docs.total > 0 && docs.verified === docs.total
-            const open = () => onOpen?.(candidate)
-            return (
-              <tr
-                key={candidate.id}
-                role="button"
-                tabIndex={0}
-                onClick={open}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    open()
-                  }
-                }}
-                className="group cursor-pointer border-b border-surface-line/70 transition-colors
-                  last:border-0 hover:bg-brand-tint/25 focus:bg-brand-tint/25 focus:outline-none"
+    <div>
+      <div className="c-lhead" aria-hidden="true">
+        <span>Candidate</span>
+        <span>Role</span>
+        <span className="c-lhead-status">Status</span>
+        <span>Documents</span>
+        <span>{compact ? '' : 'Added'}</span>
+        <span />
+      </div>
+
+      <ul className="c-list">
+        {candidates.map((candidate) => {
+          const status = pipelineStatusMeta(candidate)
+          return (
+            <li key={candidate.id}>
+              <button
+                type="button"
+                className={`c-lrow c-lrow--${status.tone}`}
+                onClick={() => onOpen?.(candidate)}
                 title={`Open ${candidate.name}`}
               >
-                <td className="relative py-3 pl-5 pr-4 align-middle">
-                  {/* Accent edge marks the hovered row without shifting anything. */}
-                  <span
-                    className="absolute left-0 top-0 h-full w-[3px] bg-brand opacity-0 transition-opacity
-                      group-hover:opacity-100 group-focus:opacity-100"
-                    aria-hidden="true"
-                  />
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full
-                        bg-gradient-to-br from-brand to-brand-bright text-[12.5px] font-semibold text-white
-                        ring-2 ring-white"
-                    >
-                      {initialsOf(candidate.name)}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-[14px] font-medium leading-5 text-ink
-                        group-hover:text-brand">
-                        {candidate.name}
-                      </span>
-                      <span className="block truncate text-[12px] leading-5 text-ink-muted">
-                        {candidate.email}
-                      </span>
-                    </span>
-                  </div>
-                </td>
-
-                <td className="py-3 pr-4 align-middle">
-                  <span className="block truncate text-[13.5px] leading-5 text-ink-body">
-                    {candidate.role}
+                <span className="c-who">
+                  <span className={`c-ring c-ring--h${hueOf(candidate.name)}`}>
+                    {initialsOf(candidate.name)}
                   </span>
-                  <span className="mt-0.5 inline-flex max-w-full items-center truncate rounded-full
-                    bg-surface-offwhite px-2 py-0.5 text-[11px] leading-4 text-ink-muted
-                    ring-1 ring-inset ring-surface-line">
-                    {candidate.department}
+                  <span className="c-who-text">
+                    <span className="c-name">{candidate.name}</span>
+                    <span className="c-mail">{candidate.email}</span>
                   </span>
-                </td>
+                </span>
 
-                <td className="py-3 pr-4 align-middle">
+                <span className="c-role">
+                  <span className="c-role-title">{candidate.role}</span>
+                  <span className="c-dept">{candidate.department}</span>
+                </span>
+
+                <span className="c-stage" title={statusMeaning(status.label)}>
                   <StatusPill label={status.label} tone={status.tone} />
-                </td>
+                </span>
 
-                <td className="w-[184px] py-3 pr-4 align-middle" title={docs.caption}>
-                  <div className="flex items-center gap-2.5">
-                    <ProgressBar
-                      className="flex-1"
-                      value={docs.uploaded}
-                      total={docs.total}
-                      tone={docs.tone}
-                      showLabel={false}
-                    />
-                    <span
-                      className={`shrink-0 text-[12px] font-medium tabular-nums ${
-                        complete ? 'text-[#0E7A47]' : 'text-ink-body'
-                      }`}
-                    >
-                      {docs.uploaded}/{docs.total}
-                    </span>
-                  </div>
-                </td>
+                <DocumentMeter candidate={candidate} />
 
-                {!compact && (
-                  <td className="py-3 pr-4 align-middle" title={formatDate(candidate.createdAt)}>
-                    <span className="whitespace-nowrap text-[12.5px] text-ink-muted">
-                      {formatRelative(candidate.createdAt)}
-                    </span>
-                  </td>
-                )}
+                <span className="c-when" title={formatDate(candidate.createdAt)}>
+                  {compact ? '' : formatRelative(candidate.createdAt)}
+                </span>
 
-                <td className="py-3 pr-5 align-middle text-right">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="ml-auto h-4 w-4 text-ink-muted/50 transition-all
-                      group-hover:translate-x-0.5 group-hover:text-brand"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                <svg className="c-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }

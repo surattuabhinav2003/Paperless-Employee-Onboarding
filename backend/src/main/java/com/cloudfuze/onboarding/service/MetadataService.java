@@ -7,7 +7,6 @@ import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.Gender;
 import com.cloudfuze.onboarding.model.EducationCourse;
 import com.cloudfuze.onboarding.model.Stage;
-import com.cloudfuze.onboarding.signature.SignatureOneService;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -18,11 +17,9 @@ import java.util.List;
 public class MetadataService {
 
     private final AppProperties appProperties;
-    private final SignatureOneService signatureService;
 
-    public MetadataService(AppProperties appProperties, SignatureOneService signatureService) {
+    public MetadataService(AppProperties appProperties) {
         this.appProperties = appProperties;
-        this.signatureService = signatureService;
     }
 
     public MetadataDto metadata() {
@@ -46,6 +43,6 @@ public class MetadataService {
 
         return new MetadataDto(documentTypes, stages, genders, bloodGroups, educationCourses,
                 appProperties.getUpload().getMaxFileSizeBytes(),
-                appProperties.getUpload().getAllowedExtensions(), signatureService.providerName());
+                appProperties.getUpload().getAllowedExtensions());
     }
 }

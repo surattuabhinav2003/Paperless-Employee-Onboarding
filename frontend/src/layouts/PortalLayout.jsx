@@ -17,12 +17,11 @@ import { stageMeta } from '../utils/status'
 const STEP_PAGES = {
   documents: ['details', 'documents', 'review'],
   offer: ['offer'],
-  bond: ['bond'],
 }
 
 function pageFrom(pathname) {
   const last = pathname.replace(/\/+$/, '').split('/').pop()
-  return ['details', 'documents', 'review', 'offer', 'bond'].includes(last) ? last : null
+  return ['details', 'documents', 'review', 'offer'].includes(last) ? last : null
 }
 
 /**
@@ -40,7 +39,7 @@ export function PortalLayout() {
 
   if (loading && !overview) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-offwhite">
+      <div className="flex min-h-screen items-center justify-center bg-surface-canvas">
         <LoadingState label="Opening your onboarding portal" />
       </div>
     )
@@ -49,7 +48,7 @@ export function PortalLayout() {
   if (error && !overview) {
     const expired = error.code === 'PORTAL_TOKEN_EXPIRED'
     return (
-      <div className="min-h-screen bg-surface-offwhite">
+      <div className="min-h-screen bg-surface-canvas">
         <PortalTopBar />
         <div className="mx-auto max-w-xl px-4 py-16">
           <div className="cf-card">
@@ -82,21 +81,23 @@ export function PortalLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-offwhite">
+    <div className="min-h-screen bg-surface-canvas">
       <PortalTopBar candidateName={overview.candidateName} stageLabel={meta.label} tone={meta.tone} />
 
       <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-6 sm:px-6">
-        <section className="mb-6 overflow-hidden rounded-card bg-gradient-to-br from-brand-ink via-[#021A63]
-          to-brand p-6 text-white shadow-card sm:p-7">
-          <p className="text-[11.5px] font-medium uppercase tracking-[0.16em] text-white/60">
+        <section className="cf-canopy cf-notch mb-6 rounded p-6 sm:p-7">
+          <p className="cf-micro relative flex items-center gap-2 text-white/55">
+            <span className="h-[3px] w-6 bg-accent-teal" aria-hidden="true" />
             {overview.role} &middot; {overview.department}
           </p>
-          <h1 className="mt-2 text-[22px] font-semibold leading-tight sm:text-[26px]">
+          <h1 className="relative mt-3 text-[23px] leading-tight sm:text-[27px]">
             {overview.headline}
           </h1>
-          <p className="mt-2.5 max-w-2xl text-[13.5px] leading-6 text-white/80">{overview.message}</p>
+          <p className="relative mt-2.5 max-w-2xl text-[13.5px] leading-6 text-white/75">
+            {overview.message}
+          </p>
           {overview.linkExpiresAt && !overview.onboardingComplete && (
-            <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1
+            <p className="relative mt-4 inline-flex items-center gap-1.5 rounded bg-white/12 px-2.5 py-1
               text-[11.5px] text-white/85 ring-1 ring-inset ring-white/20">
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="9" />
@@ -131,7 +132,7 @@ export function PortalLayout() {
 
 function PortalTopBar({ candidateName, stageLabel, tone }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-surface-line bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-surface-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-4xl items-center gap-3 px-4 sm:px-6">
         <Logo subtitle="Onboarding" />
         <div className="ml-auto flex items-center gap-3">

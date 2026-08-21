@@ -1,27 +1,80 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { CandidateTable } from '../../components/hr/CandidateTable'
 import { InviteLinkModal } from '../../components/hr/InviteLinkModal'
 import { NewCandidateModal } from '../../components/hr/NewCandidateModal'
 import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
-import { Select, TextInput } from '../../components/ui/Field'
 import { useAsync } from '../../hooks/useAsync'
 import { hrService } from '../../services/hrService'
+import { searchCandidates } from '../../utils/search'
 
+const STAGE_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'docs_pending', label: 'Documents pending' },
+  { value: 'docs_approved', label: 'Verified' },
+  { value: 'offer_accepted', label: 'Complete' },
+]
+
+/**
+ * Candidate records.
+ *
+ * Search and filtering both run on the loaded page rather than the server: it
+ * makes results instant per keystroke, lets the filter show live counts, and -
+ * the reason it matters - allows typo-tolerant matching, which a SQL `LIKE`
+ * cannot do. The API still caps the page at 100 records.
+ */
 export function CandidatesPage() {
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [search, setSearch] = useState('')
-  const [stage, setStage] = useState('')
+  const location = useLocation()
   const [createOpen, setCreateOpen] = useState(false)
   const [invitation, setInvitation] = useState(null)
 
-  const metadata = useAsync(() => hrService.metadata(), [])
-  const page = useAsync(() => hrService.candidates({ query: search, stage, size: 100 }), [search, stage])
+  /*
+   * Search and filter live in the URL, not in component state. Opening a
+   * candidate unmounts this page, so anything held in state is gone by the time
+   * you come back - and a filtered list is also worth being able to share or
+   * bookmark. `replace` keeps each keystroke out of the history stack.
+   */
+  const [params, setParams] = useSearchParams()
+  const query = params.get('q') || ''
+  const stage = params.get('stage') || ''
 
-  const candidates = page.data?.content || []
+  const update = (changes) => {
+    const next = new URLSearchParams(params)
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    }
+    setParams(next, { replace: true })
+  }
+
+  const setQuery = (value) => update({ q: value })
+  const setStage = (value) => update({ stage: value })
+
+  const metadata = useAsync(() => hrService.metadata(), [])
+  const page = useAsync(() => hrService.candidates({ size: 100 }), [])
+
+  const all = page.data?.content || []
+
+  const search = useMemo(() => searchCandidates(all, query), [all, query])
+
+  /* Counts come off the search result, so the filter tells you what is actually
+     behind each option for this query - not for the whole account. */
+  const counts = useMemo(() => {
+    const tally = { '': search.results.length }
+    for (const filter of STAGE_FILTERS) {
+      if (!filter.value) continue
+      tally[filter.value] = search.results.filter((c) => c.stage === filter.value).length
+    }
+    return tally
+  }, [search.results])
+
+  const visible = useMemo(
+    () => (stage ? search.results.filter((candidate) => candidate.stage === stage) : search.results),
+    [search.results, stage],
+  )
 
   const onCreated = (created) => {
     setCreateOpen(false)
@@ -29,74 +82,95 @@ export function CandidatesPage() {
     page.reload().catch(() => {})
   }
 
+  const searching = query.trim().length > 0
+
   return (
     <>
       <PageHeader
         breadcrumb="HR console"
-        title="Candidate pipeline"
-        subtitle="Every candidate and where they stand. Open a row for their details, documents, offer and bond."
+        title="Candidate Records"
         actions={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
       />
 
-      <section className="cf-card overflow-hidden">
-        <header className="flex flex-wrap items-center gap-3 border-b border-surface-line px-5 py-4">
-          <form
-            className="flex flex-1 flex-wrap items-center gap-2.5"
-            onSubmit={(event) => {
-              event.preventDefault()
-              setSearch(query.trim())
-            }}
-          >
-            <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
-              <TextInput
-                value={query}
-                placeholder="Search name, email, role, department"
-                onChange={(event) => setQuery(event.target.value)}
-                className="pl-9"
-              />
-              <svg
-                viewBox="0 0 24 24"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.9"
+      <section className="c-panel">
+        <div className="c-toolbar">
+          <div className="c-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
+              strokeLinecap="round" aria-hidden="true">
+              <path d="m21 21-4.35-4.35M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+            </svg>
+            <input
+              className="cf-input cf-input--icon"
+              type="text"
+              value={query}
+              placeholder="Search name, email, role, department"
+              aria-label="Search candidates"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {searching && (
+              <button
+                type="button"
+                className="c-search-clear"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                title="Clear search"
               >
-                <path d="m21 21-4.35-4.35M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
-              </svg>
-            </div>
-            <Select
-              value={stage}
-              onChange={(event) => setStage(event.target.value)}
-              className="w-full sm:w-[200px]"
-              aria-label="Filter by stage"
-            >
-              <option value="">All stages</option>
-              {(metadata.data?.stages || []).map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <Button type="submit" variant="subtle">
-              Search
-            </Button>
-            {(search || stage) && (
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setQuery('')
-                  setSearch('')
-                  setStage('')
-                }}
-              >
-                Clear
-              </Button>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
             )}
-          </form>
-          <span className="text-[12.5px] text-ink-muted">
-            {page.data ? `${page.data.totalElements} candidate${page.data.totalElements === 1 ? '' : 's'}` : ''}
+          </div>
+
+          {/* One control rather than loose chips: the options belong together,
+              and each carries its own count. */}
+          <div className="c-segctl" role="group" aria-label="Filter by stage">
+            {STAGE_FILTERS.map((filter) => (
+              <button
+                key={filter.value || 'all'}
+                type="button"
+                className={`c-segbtn${stage === filter.value ? ' is-on' : ''}`}
+                aria-pressed={stage === filter.value}
+                onClick={() => setStage(filter.value)}
+              >
+                {filter.label}
+                <b>{counts[filter.value] ?? 0}</b>
+              </button>
+            ))}
+          </div>
+
+          <span className="c-count">
+            <b>{visible.length}</b>
+            {visible.length === 1 ? ' record' : ' records'}
           </span>
-        </header>
+        </div>
+
+        {/* The query stays put on a miss, so a typo can be corrected rather
+            than retyped from scratch. */}
+        {searching && (
+          <p className="c-searchnote">
+            {visible.length === 0 ? (
+              <>
+                Nothing matches <b>&ldquo;{query.trim()}&rdquo;</b>. Check the spelling, or{' '}
+                <button type="button" className="c-linkbtn" onClick={() => setQuery('')}>
+                  clear the search
+                </button>
+                .
+              </>
+            ) : search.fuzzy ? (
+              <>
+                No exact match for <b>&ldquo;{query.trim()}&rdquo;</b> &ndash; showing the closest{' '}
+                {visible.length === 1 ? 'record' : `${visible.length} records`}.
+              </>
+            ) : (
+              <>
+                {visible.length} {visible.length === 1 ? 'match' : 'matches'} for{' '}
+                <b>&ldquo;{query.trim()}&rdquo;</b>, best first.
+              </>
+            )}
+          </p>
+        )}
 
         {page.error && !page.data ? (
           <ErrorState
@@ -105,9 +179,11 @@ export function CandidatesPage() {
           />
         ) : (
           <CandidateTable
-            candidates={candidates}
+            candidates={visible}
             loading={page.loading && !page.data}
-            onOpen={(candidate) => navigate(`/candidates/${candidate.id}`)}
+            onOpen={(candidate) => navigate(`/candidates/${candidate.id}`, {
+              state: { from: `${location.pathname}${location.search}` },
+            })}
             emptyAction={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
           />
         )}
@@ -126,7 +202,6 @@ export function CandidatesPage() {
         candidateName={invitation?.candidateName}
         onClose={() => setInvitation(null)}
       />
-
     </>
   )
 }

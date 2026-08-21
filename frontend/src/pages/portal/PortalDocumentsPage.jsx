@@ -6,24 +6,12 @@ import { DocumentViewer } from '../../components/ui/DocumentViewer'
 import { FileDropzone } from '../../components/ui/FileDropzone'
 import { ProgressBar } from '../../components/ui/ProgressBar'
 import { LoadingState } from '../../components/ui/Spinner'
-import { StatusPill } from '../../components/ui/StatusPill'
 import { ErrorState } from '../../components/ui/EmptyState'
 import { useToast } from '../../context/ToastContext'
 import { useAsync } from '../../hooks/useAsync'
 import { fileUrl } from '../../services/apiClient'
 import { portalService } from '../../services/portalService'
 import { formatBytes, formatDateTime } from '../../utils/format'
-const CANDIDATE_STATUS = {
-  pending: { label: 'Not uploaded', tone: 'grey' },
-  submitted: { label: 'Submitted', tone: 'blue' },
-  verified: { label: 'Submitted', tone: 'blue' },
-  rejected: { label: 'Needs a new copy', tone: 'red' },
-}
-
-function candidateStatus(status) {
-  return CANDIDATE_STATUS[status] || CANDIDATE_STATUS.pending
-}
-
 export function PortalDocumentsPage() {
   const { token, reloadOverview, overview } = useOutletContext()
   const toast = useToast()
@@ -133,20 +121,12 @@ export function PortalDocumentsPage() {
           </span>
         </div>
 
-        {!overview.submittedForReview && !overview.readyToSubmit && outstanding.length > 0 && (
-          <div className="mt-4 rounded border border-[#FE5833]/25 bg-[#FFF4EC] px-4 py-3">
-            <p className="text-[12.5px] font-semibold text-[#B94A18]">
-              Still to finish before you can submit
-            </p>
-            <ul className="mt-2 space-y-1.5">
-              {outstanding.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-[12.5px] text-[#8E3A11]">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-orange" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {!overview.submittedForReview && outstanding.length > 0 && (
+          <p className="mt-3 text-[12.5px] text-ink-muted">
+            {outstanding.length === 1
+              ? '1 thing left before you can submit.'
+              : `${outstanding.length} things left before you can submit.`}
+          </p>
         )}
       </section>
 
@@ -158,11 +138,49 @@ export function PortalDocumentsPage() {
         filename={viewing?.filename}
       />
 
-      <div className="space-y-3.5">
-        {documents.map((doc) => (
+      {(() => {
+        const uploaded = documents.filter((d) => d.status !== 'pending' && d.status !== 'rejected').length
+        const percent = documents.length ? Math.round((uploaded / documents.length) * 100) : 0
+        /* The first thing still needing the candidate, so the page can point at
+           one item instead of listing seven. */
+        const nextUp = documents.find((d) => d.status === 'rejected')
+          || documents.find((d) => d.status === 'pending')
+        return (
+          <div className="pd-progress">
+            <div className="pd-progress-top">
+              <span className="pd-progress-count">
+                <b>{uploaded}</b> of {documents.length} uploaded
+              </span>
+              <span className="pd-progress-hint">
+                {allowedExtensions.join(', ')} &middot; up to {formatBytes(maxFileSizeBytes)}
+              </span>
+            </div>
+            <div className="pd-bar"><span style={{ width: `${percent}%` }} /></div>
+            {nextUp && uploadAllowed && (
+              <p className="pd-next">
+                {nextUp.status === 'rejected' ? 'Needs a new copy: ' : 'Next up: '}
+                <b>{nextUp.typeLabel}</b>
+              </p>
+            )}
+            {!nextUp && (
+              <p className="pd-next">All documents are in. Review and submit when you are ready.</p>
+            )}
+          </div>
+        )
+      })()}
+
+      <div className="space-y-3">
+        {documents.map((doc, index) => (
           <DocumentRow
             key={doc.type}
             doc={doc}
+            index={index + 1}
+            isNext={
+              doc.type === (
+                documents.find((d) => d.status === 'rejected')
+                || documents.find((d) => d.status === 'pending')
+              )?.type
+            }
             uploadAllowed={uploadAllowed}
             uploading={uploadingType === doc.type}
             maxBytes={maxFileSizeBytes}
@@ -176,8 +194,17 @@ export function PortalDocumentsPage() {
   )
 }
 
-function DocumentRow({ doc, uploadAllowed, uploading, maxBytes, allowedExtensions, onUpload, onView }) {
-  const meta = candidateStatus(doc.status)
+function DocumentRow({
+  doc,
+  index,
+  isNext,
+  uploadAllowed,
+  uploading,
+  maxBytes,
+  allowedExtensions,
+  onUpload,
+  onView,
+}) {
   const canUpload = uploadAllowed && doc.uploadAllowed
   // Education certificates above Class 10 must say which course they are for.
   const [course, setCourse] = useState(doc.course || '')
@@ -192,123 +219,111 @@ function DocumentRow({ doc, uploadAllowed, uploading, maxBytes, allowedExtension
     return [...groups.entries()]
   }, [doc.courseOptions])
 
+  const state = doc.status === 'verified' ? 'done'
+    : doc.status === 'submitted' ? 'review'
+      : doc.status === 'rejected' ? 'rejected'
+        : isNext ? 'next' : ''
+
   return (
     <section className="cf-card overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-[14.5px] font-semibold text-ink">{doc.typeLabel}</h3>
-            <StatusPill label={meta.label} tone={meta.tone} />
-            <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-ink-muted">
-              {doc.mandatory ? 'Required' : 'Optional'}
-            </span>
-            {doc.courseLabel && (
-              <span className="rounded-full bg-brand-tint px-2 py-0.5 text-[11px] font-medium text-brand">
-                {doc.courseLabel}
-              </span>
-            )}
+      <div className={`pd-item${state ? ` pd-item--${state}` : ''}`}>
+        <span className="pd-num" aria-hidden="true">
+          {doc.status === 'verified' || doc.status === 'submitted' ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          ) : index}
+        </span>
+
+        <div className="pd-body">
+          <div className="pd-title-row">
+            <h3 className="pd-title">{doc.typeLabel}</h3>
+            {doc.mandatory && <span className="pd-req">Required</span>}
+            {doc.courseLabel && <span className="d-course">{doc.courseLabel}</span>}
           </div>
 
-          {doc.filename ? (
-            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-ink-muted">
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor"
-                strokeWidth="1.8">
-                <path d="M14 3v5h5M6 3h9l5 5v13H6V3Z" />
-              </svg>
-              <span className="font-medium text-ink-body">{doc.filename}</span>
+          {/* One line about the file, and only when there is one. The status is
+              already carried by the number badge. */}
+          {doc.filename && (
+            <p className="pd-file">
+              <b>{doc.filename}</b>
               <span>&middot; {formatBytes(doc.sizeBytes)}</span>
-              <span>&middot; uploaded {formatDateTime(doc.uploadedAt)}</span>
-              {doc.version > 1 && <span>&middot; version {doc.version}</span>}
+              <span>&middot; {formatDateTime(doc.uploadedAt)}</span>
+              {doc.downloadUrl && (
+                <button type="button" className="c-linkbtn" onClick={onView}>View</button>
+              )}
             </p>
-          ) : (
-            <p className="mt-1.5 text-[12.5px] text-ink-muted">Not uploaded yet.</p>
           )}
 
           {doc.status === 'rejected' && doc.rejectReason && (
-            <div className="mt-3 rounded border border-accent-red/30 bg-[#FFECEC] px-3.5 py-2.5">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#C21414]">
-                Please upload a new copy
-              </p>
-              <p className="mt-1 text-[13px] leading-5 text-[#8E1010]">{doc.rejectReason}</p>
+            <div className="pd-rejected">
+              <b>Please upload a new copy</b>
+              <p>{doc.rejectReason}</p>
             </div>
           )}
 
-        </div>
+          {!canUpload && (doc.status === 'submitted' || doc.status === 'verified') && (
+            <p className="pd-done-note">Received - nothing more needed for this one.</p>
+          )}
 
-        {doc.downloadUrl && (
-          <button
-            type="button"
-            onClick={onView}
-            className="shrink-0 rounded border border-surface-line px-3 py-1.5 text-[12.5px] font-semibold
-              text-brand transition hover:border-brand hover:bg-brand-tint"
-          >
-            View
-          </button>
-        )}
-      </div>
-
-      {canUpload && (
-        <div className="border-t border-surface-line bg-surface-offwhite/40 px-5 py-4">
-          {uploading ? (
-            <LoadingState label="Uploading" className="py-4" />
-          ) : (
-            <div className="space-y-3">
-              {doc.requiresCourse && (
-                <Field
-                  label={
-                    doc.type === 'secondary_education_certificate'
-                      ? 'Which secondary course is this?'
-                      : 'Which course is this for?'
-                  }
-                  htmlFor={`course-${doc.type}`}
-                  required
-                  hint="Pick this first - it is stored with the certificate."
-                >
-                  <Select
-                    id={`course-${doc.type}`}
-                    value={course}
-                    onChange={(event) => setCourse(event.target.value)}
-                    className="sm:max-w-xs"
-                  >
-                    <option value="">Select</option>
-                    {courseGroups.map(([group, options]) => (
-                      <optgroup key={group} label={group}>
-                        {options.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </Select>
-                </Field>
+          {canUpload && (
+            <div className="pd-upload">
+              {uploading ? (
+                <LoadingState label="Uploading" className="py-3" />
+              ) : (
+                <>
+                  {doc.requiresCourse && (
+                    <div className="pd-course">
+                      <Field
+                        label={
+                          doc.type === 'secondary_education_certificate'
+                            ? 'Which secondary course is this?'
+                            : 'Which course is this for?'
+                        }
+                        htmlFor={`course-${doc.type}`}
+                        required
+                      >
+                        <Select
+                          id={`course-${doc.type}`}
+                          value={course}
+                          onChange={(event) => setCourse(event.target.value)}
+                        >
+                          <option value="">Select a course</option>
+                          {courseGroups.map(([group, options]) => (
+                            <optgroup key={group} label={group}>
+                              {options.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
+                  )}
+                  <FileDropzone
+                    compact
+                    showHint={false}
+                    disabled={courseMissing}
+                    maxBytes={maxBytes}
+                    allowedExtensions={allowedExtensions}
+                    onSelect={(file) => onUpload(file, course || null)}
+                    label={
+                      courseMissing
+                        ? 'Choose the course above first'
+                        : doc.status === 'rejected'
+                          ? 'Upload a replacement'
+                          : 'Choose file or drag it here'
+                    }
+                  />
+                </>
               )}
-              <FileDropzone
-                compact
-                disabled={courseMissing}
-                maxBytes={maxBytes}
-                allowedExtensions={allowedExtensions}
-                onSelect={(file) => onUpload(file, course || null)}
-                label={
-                  courseMissing
-                    ? 'Select the course above first'
-                    : doc.status === 'rejected'
-                      ? 'Upload a replacement'
-                      : `Upload ${doc.typeLabel}`
-                }
-              />
             </div>
           )}
         </div>
-      )}
-
-      {!canUpload && (doc.status === 'submitted' || doc.status === 'verified') && (
-        <div className="border-t border-surface-line bg-surface-offwhite/40 px-5 py-3">
-          <p className="text-[12.5px] text-ink-muted">
-            Received - nothing more needed for this one.
-          </p>
-        </div>
-      )}
+      </div>
     </section>
   )
 }

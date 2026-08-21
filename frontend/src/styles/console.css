@@ -1,0 +1,1651 @@
+/* ============================================================================
+ * The console shell and dashboard - core CSS.
+ *
+ * Colour does the work here. The rail is deep navy so the app has an anchor;
+ * the page header sits on a soft blue-to-teal wash; and the four figures are
+ * four tinted tiles, which is what stops the content area reading as blank
+ * white paper. Space Grotesk carries every title and number.
+ * ========================================================================== */
+
+/* ==========================================================================
+ * Navigation rail
+ * ======================================================================== */
+
+.c-rail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 0 16px;
+  color: #fff;
+  background-image:
+    radial-gradient(120% 45% at 50% 0%, rgba(18, 179, 170, 0.14) 0%, transparent 60%),
+    linear-gradient(172deg, var(--navy-900) 0%, var(--navy-800) 62%, #101f52 100%);
+}
+
+.c-rail-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px 20px;
+}
+
+.c-rail-top--narrow {
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 10px 20px;
+}
+
+.c-rail-toggle {
+  flex-shrink: 0;
+  display: none;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.c-rail-toggle:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.c-rail-toggle svg { width: 15px; height: 15px; display: block; }
+
+@media (min-width: 1024px) {
+  .c-rail-toggle { display: block; }
+}
+
+.c-rail-heading {
+  margin: 0 0 8px;
+  padding: 4px 20px 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.c-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 10px;
+}
+
+.c-nav-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.68);
+  text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.c-nav-item:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+
+/* Active gets a tinted bed plus a teal marker - colour, not just contrast. */
+.c-nav-item.is-active {
+  background: linear-gradient(100deg, rgba(18, 179, 170, 0.2), rgba(47, 111, 216, 0.16));
+  color: #fff;
+}
+
+.c-nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: -10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--teal-500);
+}
+
+.c-nav-item--narrow {
+  align-items: center;
+  justify-content: center;
+  padding: 11px;
+}
+
+.c-nav-icon { width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px; }
+
+.c-nav-text { min-width: 0; }
+
+.c-nav-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.c-nav-hint {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-nav-item.is-active .c-nav-hint { color: rgba(255, 255, 255, 0.6); }
+
+/* ---- signed-in block ---- */
+
+.c-rail-foot { margin-top: 16px; padding: 0 10px; }
+
+.c-user {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.c-user-row { display: flex; align-items: center; gap: 10px; }
+
+.c-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background-image: linear-gradient(140deg, var(--teal-500), var(--blue-500));
+  color: #fff;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.c-user-who { min-width: 0; flex: 1; }
+
+.c-user-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-user-mail {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.c-signout:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+.c-signout svg { width: 14px; height: 14px; }
+
+.c-signout--icon {
+  width: auto;
+  margin: 0;
+  padding: 9px;
+  border-color: transparent;
+}
+
+/* ==========================================================================
+ * Page header - a soft colour wash, not a dark slab and not bare canvas
+ * ======================================================================== */
+
+.c-head {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 22px 24px;
+  border: 1px solid #dbe6fb;
+  border-radius: var(--radius-lg);
+  background-image:
+    radial-gradient(120% 180% at 100% -40%, rgba(18, 179, 170, 0.16) 0%, transparent 60%),
+    linear-gradient(103deg, #ffffff 0%, var(--blue-050) 52%, #eaf3ff 100%);
+}
+
+/* A hairline of brand colour along the top edge. */
+.c-head::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background-image: linear-gradient(90deg, var(--blue-700), var(--blue-500) 45%, var(--teal-500));
+}
+
+.c-head-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 9px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue-600);
+}
+
+.c-head-eyebrow i {
+  width: 16px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--teal-500);
+}
+
+.c-head h1 {
+  font-size: clamp(1.4rem, 2.6vw, 1.75rem);
+  color: var(--ink-900);
+}
+
+.c-head-sub {
+  margin: 8px 0 0;
+  max-width: 40rem;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-600);
+}
+
+.c-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+/* ==========================================================================
+ * Dashboard
+ * ======================================================================== */
+
+.c-dash { display: grid; gap: 18px; }
+.c-dash > * { min-width: 0; }
+
+/* Four tinted tiles. This is where the colour lives. */
+.c-figs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (min-width: 900px) {
+  .c-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.c-fig {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 18px 16px;
+  border: 1px solid;
+  border-radius: var(--radius-lg);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.c-fig:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+/* A soft bloom in the tile's own hue, so it reads as lit rather than filled. */
+.c-fig::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -25%;
+  width: 62%;
+  height: 150%;
+  border-radius: 50%;
+  opacity: 0.5;
+  background: radial-gradient(circle, #fff 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.c-fig-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.c-fig-mark svg { width: 16px; height: 16px; }
+
+.c-fig-n {
+  display: block;
+  font-family: var(--display);
+  font-size: 2.1rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-fig-l {
+  display: block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.c-fig--blue  { border-color: #cddcfa; background: linear-gradient(160deg, #eaf1ff, #dfe9ff); }
+.c-fig--amber { border-color: #f2ddb6; background: linear-gradient(160deg, #fdf3e2, #fbe9cd); }
+.c-fig--teal  { border-color: #bde8e4; background: linear-gradient(160deg, #e4f8f6, #d5f2ef); }
+.c-fig--green { border-color: #bfe7d3; background: linear-gradient(160deg, #e6f7ee, #d7f1e4); }
+
+.c-fig--blue  .c-fig-n, .c-fig--blue  .c-fig-mark { color: var(--blue-700); }
+.c-fig--amber .c-fig-n, .c-fig--amber .c-fig-mark { color: var(--amber-600); }
+.c-fig--teal  .c-fig-n, .c-fig--teal  .c-fig-mark { color: var(--teal-600); }
+.c-fig--green .c-fig-n, .c-fig--green .c-fig-mark { color: var(--green-600); }
+
+.c-fig--blue  .c-fig-l { color: #3a5599; }
+.c-fig--amber .c-fig-l { color: #8a6416; }
+.c-fig--teal  .c-fig-l { color: #0d7c76; }
+.c-fig--green .c-fig-l { color: #196f4c; }
+
+.c-fig-skel {
+  display: block;
+  width: 2.6rem;
+  height: 2.1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* ---- panel with a titled header ---- */
+
+.c-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.c-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #fbfdff, var(--paper));
+}
+
+.c-panel-head h2 {
+  font-size: 15px;
+  color: var(--ink-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-fig:hover { transform: none; }
+}
+
+/* ==========================================================================
+ * Candidate records
+ *
+ * A grid-aligned record list rather than a <table>: the columns still line up,
+ * but each row can carry a stage-coloured edge, a ringed avatar and a real
+ * document meter. Below 900px the same rows restack as cards instead of
+ * scrolling sideways.
+ * ======================================================================== */
+
+.c-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #fbfdff, var(--paper));
+}
+
+.c-search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 200px;
+  max-width: 340px;
+}
+
+.c-search svg {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--ink-400);
+  pointer-events: none;
+}
+
+/*
+ * The stage filter, as one segmented control rather than loose chips. The
+ * options belong to each other, so they share a housing; each carries its own
+ * live count, and the active one is filled with the brand gradient.
+ */
+.c-segctl {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #f3f6fd;
+  box-shadow: inset 0 1px 2px rgba(11, 21, 51, 0.04);
+}
+
+.c-segbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-600);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.c-segbtn:hover { background: rgba(255, 255, 255, 0.85); color: var(--blue-700); }
+
+.c-segbtn.is-on {
+  background-image: linear-gradient(135deg, var(--blue-700), var(--blue-500));
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(11, 21, 51, 0.2);
+}
+
+/* The count rides inside the segment. */
+.c-segbtn b {
+  min-width: 15px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: #e3e9f6;
+  font-family: var(--display);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-400);
+  text-align: center;
+}
+
+.c-segbtn.is-on b { background: rgba(255, 255, 255, 0.22); color: #fff; }
+
+/* ---- search field ---- */
+
+/*
+ * Clearing a search. A filled grey disc parked in the field read as a defect;
+ * at rest this is just the glyph, and the tinted disc only appears under the
+ * pointer. The 26px box keeps the tap target honest either way.
+ */
+.c-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-300);
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.c-search-clear:hover,
+.c-search-clear:focus-visible {
+  background: var(--blue-100);
+  color: var(--blue-700);
+}
+
+.c-search-clear:active { background: var(--blue-200); }
+
+.c-search-clear svg { width: 14px; height: 14px; display: block; }
+
+/* What the search actually did. Sits under the toolbar so the row height never
+   shifts when it appears. */
+.c-searchnote {
+  margin: 0;
+  padding: 9px 22px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfcff;
+  font-size: 12px;
+  color: var(--ink-600);
+}
+
+.c-searchnote b { font-weight: 500; color: var(--ink-900); }
+
+.c-linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--blue-600);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.c-linkbtn:hover { color: var(--blue-700); }
+
+.c-count {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--ink-400);
+  white-space: nowrap;
+}
+
+.c-count b { font-family: var(--display); color: var(--ink-900); }
+
+/* ==========================================================================
+ * Candidate records
+ *
+ * A grid-aligned record list rather than a <table>: the columns still line up,
+ * but each row can carry a stage-coloured edge, a ringed avatar and a real
+ * document meter. Below 900px the same rows restack as cards instead of
+ * scrolling sideways.
+ * ======================================================================== */
+
+.c-list { margin: 0; padding: 0; list-style: none; }
+
+/* Sits over the pill's dot rather than the pill's invisible box edge. */
+.c-lhead-status { padding-left: 9px; }
+
+/*
+ * The status column is a fixed track, so a long label used to overflow it and
+ * crowd the meter. Clip it here instead of trusting every future label to be
+ * short enough.
+ */
+.c-stage { min-width: 0; }
+
+.c-stage .cf-tag {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.c-stage .cf-tag span { overflow: hidden; text-overflow: ellipsis; }
+
+.c-lhead,
+.c-lrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.15fr) 152px 166px 76px 22px;
+  align-items: center;
+  gap: 16px;
+}
+
+.c-lhead {
+  padding: 10px 22px 10px 25px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #f4f8ff, var(--blue-050));
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8a97b3;
+}
+
+.c-lrow {
+  position: relative;
+  width: 100%;
+  padding: 15px 22px 15px 25px;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.c-list li:last-child .c-lrow { border-bottom: 0; }
+
+.c-lrow:hover,
+.c-lrow:focus-visible { background: var(--blue-050); outline: none; }
+
+/* The stage's colour as a left edge - only on hover, so a quiet list stays
+   quiet but the row you are on tells you where it stands. */
+.c-lrow::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--blue-500);
+  opacity: 0.45;
+  transition: opacity 150ms ease, top 150ms ease, bottom 150ms ease;
+}
+
+/* On hover it runs the full height and turns solid. */
+.c-lrow:hover::before,
+.c-lrow:focus-visible::before { top: 0; bottom: 0; opacity: 1; }
+
+.c-lrow--green::before { background: var(--green-500); }
+.c-lrow--teal::before  { background: var(--teal-500); }
+.c-lrow--amber::before { background: var(--amber-500); }
+.c-lrow--red::before   { background: var(--rose-500); }
+.c-lrow--slate::before { background: #8fa0c4; }
+
+/* ---- who ---- */
+
+.c-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* A ring in the candidate's stage colour: identity and state in one mark. */
+.c-ring {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background-image: linear-gradient(140deg, var(--blue-700), var(--blue-500));
+  color: #fff;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--blue-100);
+}
+
+/* Five on-brand gradients, picked deterministically from the name. Same person,
+   same colour, every session - which is what makes a list scannable by face. */
+.c-ring--h0 { background-image: linear-gradient(140deg, #0129ac, #2f6fd8); }
+.c-ring--h1 { background-image: linear-gradient(140deg, #123a86, #12b3aa); }
+.c-ring--h2 { background-image: linear-gradient(140deg, #1c4fc4, #3fd6f1); }
+.c-ring--h3 { background-image: linear-gradient(140deg, #0f5e8f, #2f9fd8); }
+.c-ring--h4 { background-image: linear-gradient(140deg, #2a3f8f, #6f8ae0); }
+
+.c-lrow--green .c-ring { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--green-100); }
+.c-lrow--teal .c-ring  { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--teal-100); }
+.c-lrow--amber .c-ring { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--amber-100); }
+.c-lrow--red .c-ring   { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--rose-100); }
+.c-lrow--slate .c-ring { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px #e6ebf7; }
+
+.c-who-text { min-width: 0; }
+
+.c-name {
+  display: block;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-mail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.005em;
+  color: #8a97b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- role ---- */
+
+.c-role { min-width: 0; }
+
+.c-role-title {
+  display: block;
+  font-size: 13.5px;
+  color: var(--ink-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-dept {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: #f1f4fb;
+  font-size: 11px;
+  color: var(--ink-400);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- the document meter ---- */
+
+/* One segment per requested document, coloured by that document's own state.
+   A single bar can only show "how far along"; this shows what it is made of -
+   which of them are verified, waiting, or sent back. */
+.c-meter { display: flex; align-items: center; gap: 9px; min-width: 0; }
+
+.c-meter-track { display: flex; flex: 1; gap: 3px; min-width: 0; }
+
+.c-seg {
+  flex: 1;
+  height: 7px;
+  min-width: 4px;
+  border-radius: 2px;
+  background: #e4e8f2;
+}
+
+.c-seg--verified { background: var(--green-500); }
+.c-seg--review   { background: var(--teal-500); }
+.c-seg--rejected { background: var(--rose-500); }
+
+/* Above ten documents the segments get too thin to read, so it falls back to
+   a proportional bar. */
+.c-meter-bar {
+  flex: 1;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: #e4e8f2;
+  overflow: hidden;
+}
+
+.c-meter-bar span { display: block; height: 100%; border-radius: var(--radius-pill); }
+
+.c-meter-n {
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-600);
+}
+
+.c-meter-n.is-done { color: var(--green-600); }
+
+.c-when {
+  font-size: 12px;
+  color: #8a97b3;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-chev {
+  width: 18px;
+  height: 18px;
+  color: var(--ink-300);
+  transition: transform 150ms ease, color 150ms ease;
+}
+
+.c-lrow:hover .c-chev { transform: translateX(2px); color: var(--blue-600); }
+
+/* ---- stacked cards on narrow screens ---- */
+
+@media (max-width: 900px) {
+  .c-lhead { display: none; }
+
+  .c-lrow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    padding: 16px 18px;
+  }
+
+  .c-who { grid-column: 1; }
+  .c-lrow > .c-stage { grid-column: 2; justify-self: end; }
+  .c-role { grid-column: 1 / -1; }
+  .c-meter { grid-column: 1 / -1; }
+  .c-when { grid-column: 1; }
+  .c-chev { display: none; }
+}
+
+/* ==========================================================================
+ * Offer desk
+ *
+ * The same record row as Candidate Records, one column lighter: an offer has no
+ * document meter, so the grid drops that track and the remaining columns take
+ * the space. Clicking a row opens that candidate's offer.
+ * ======================================================================== */
+
+.o-lhead,
+.o-lrow {
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.2fr) 152px 96px 22px;
+}
+
+@media (max-width: 900px) {
+  .o-lhead { display: none; }
+
+  .o-lrow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+  }
+
+  .o-lrow > .c-role { grid-column: 1 / -1; }
+  .o-lrow > .c-when { grid-column: 1; }
+}
+
+/* ---- the offer screen -------------------------------------------------- */
+
+.c-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-400);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.c-back:hover { color: var(--blue-700); }
+.c-back svg { width: 14px; height: 14px; }
+
+.c-offerhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+}
+
+.c-offerhead-text { flex: 1; min-width: 0; }
+
+.c-offerhead h1 {
+  font-size: 19px;
+  color: var(--ink-900);
+}
+
+.c-offerhead p {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-400);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.c-offerbody { display: grid; gap: 18px; }
+.c-offerbody > * { min-width: 0; }
+
+/* ==========================================================================
+ * Candidate record
+ *
+ * The header used to run three timestamps together in one muted line and the
+ * details panel framed every single value in its own grey box - which read as a
+ * wall of text. Here the header carries a proper milestone strip, and the
+ * details are a clean definition grid whose copy buttons only appear on hover.
+ * ======================================================================== */
+
+.r-head {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 20px 22px;
+}
+
+@media (min-width: 900px) {
+  .r-head { grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); align-items: start; }
+}
+
+.r-id { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+
+.r-av {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--blue-100);
+}
+
+.r-id-text { min-width: 0; }
+
+.r-name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+.r-head h1 {
+  font-size: 22px;
+  color: var(--ink-900);
+}
+
+.r-contact {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+/* Milestones as three labelled cells, not a run-on sentence. */
+.r-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 16px;
+}
+
+.r-step {
+  position: relative;
+  padding: 0 20px 0 0;
+  margin-right: 20px;
+}
+
+.r-step + .r-step::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: -20px;
+  width: 1px;
+  background: var(--line);
+}
+
+.r-step-label {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+
+.r-step-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-700);
+  white-space: nowrap;
+}
+
+.r-step-value.is-waiting { color: var(--ink-300); font-weight: 400; }
+
+/* ---- the measures on the right ---- */
+
+.r-meta {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcff;
+}
+
+.r-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.r-meta-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+
+.r-meta-figure {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
+}
+
+.r-meta-note { font-size: 11.5px; color: var(--ink-400); }
+
+/* ==========================================================================
+ * Personal information
+ *
+ * Each value gets its own framed box. HR reads these to re-key them into
+ * payroll, so a hard edge around every field makes it obvious where one value
+ * ends and the next begins - easier to read off than rows separated only by a
+ * hairline.
+ * ======================================================================== */
+
+.r-fields {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .r-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.r-field {
+  position: relative;
+  padding: 11px 40px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcff;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.r-field:hover { border-color: var(--blue-200); background: var(--blue-050); }
+
+.r-field--wide { grid-column: 1 / -1; }
+
+.r-field dt {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+
+.r-field dd {
+  margin: 5px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-900);
+  overflow-wrap: anywhere;
+}
+
+.r-field dd.is-empty { color: var(--ink-300); font-weight: 400; }
+
+/* Present but quiet, and only fully opaque once the field is hovered. */
+.r-copy {
+  position: absolute;
+  top: 9px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-300);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.r-field:hover .r-copy,
+.r-copy:focus-visible { opacity: 1; }
+
+.r-copy:hover { background: #e2ebff; color: var(--blue-700); }
+.r-copy.is-done { opacity: 1; background: var(--green-100); color: var(--green-600); }
+.r-copy svg { width: 13px; height: 13px; }
+
+.r-foot {
+  margin: 14px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-300);
+}
+
+/* ==========================================================================
+ * Onboarding link
+ *
+ * A narrow column, so the three facts stack as label/value rows rather than
+ * squeezing into three columns and truncating the email. The primary action
+ * takes the full width and the two secondary ones share a row, which stops the
+ * three buttons wrapping into a ragged two-and-one.
+ * ======================================================================== */
+
+.r-link-meta {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+  border-top: 1px solid var(--hair);
+}
+
+.r-link-meta > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.r-link-meta dt {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+
+.r-link-meta dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-700);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.r-link-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* The primary action spans; the other two share the row beneath it. */
+.r-link-actions .c-btn:first-child { width: 100%; }
+
+.r-link-secondary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.r-link-secondary .c-btn { width: 100%; padding-inline: 10px; }
+
+/* ==========================================================================
+ * Document review
+ *
+ * Two saturated fills side by side made every row shout, and the destructive
+ * action was as loud as the safe one. Here Verify is a soft green affirmative,
+ * Reject stays quiet until you reach for it, and each row gets a file tile and
+ * a status edge so the list scans without being read.
+ * ======================================================================== */
+
+.d-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--amber-100);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--amber-600);
+}
+
+.d-note svg { flex-shrink: 0; width: 15px; height: 15px; margin-top: 1px; }
+
+.d-list { margin: 0; padding: 0; list-style: none; }
+
+.d-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 20px 15px 23px;
+  border-bottom: 1px solid var(--hair);
+  transition: background-color 150ms ease;
+}
+
+.d-list li:last-child .d-row { border-bottom: 0; }
+.d-row:hover { background: #fbfcff; }
+
+/* The document's own state, down the left edge. */
+.d-row::before {
+  content: '';
+  position: absolute;
+  top: 11px;
+  bottom: 11px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--line);
+}
+
+.d-row--submitted::before { background: var(--amber-500); }
+.d-row--verified::before { background: var(--green-500); }
+.d-row--rejected::before { background: var(--rose-500); }
+
+/* A tile carrying the file's kind - the row's anchor. */
+.d-tile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: #eef2fa;
+  color: var(--ink-400);
+  font-family: var(--display);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.d-row--verified .d-tile { background: var(--green-100); color: var(--green-600); }
+.d-row--submitted .d-tile { background: var(--amber-100); color: var(--amber-600); }
+.d-row--rejected .d-tile { background: var(--rose-100); color: var(--rose-600); }
+
+.d-body { flex: 1; min-width: 220px; }
+
+.d-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.d-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+/* "Mandatory" was bare uppercase text floating beside a pill; it reads better
+   as a chip of its own. */
+.d-req {
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: #eef2fa;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+
+.d-course {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-100);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--blue-700);
+}
+
+.d-meta {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: #8a97b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.d-reason {
+  margin: 9px 0 0;
+  padding: 8px 11px;
+  border-left: 3px solid var(--rose-500);
+  border-radius: 0 6px 6px 0;
+  background: var(--rose-100);
+  font-size: 12px;
+  line-height: 1.55;
+  color: #8e1010;
+}
+
+.d-actions { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
+
+.d-waiting { font-size: 12px; color: var(--ink-300); }
+
+/* ---- the two decisions ---- */
+
+.d-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid;
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.d-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.d-btn svg { width: 13px; height: 13px; }
+
+/* Affirmative, but soft: it is the expected outcome, not an alarm. */
+.d-verify {
+  border-color: #bfe6d3;
+  background: var(--green-100);
+  color: var(--green-600);
+}
+
+.d-verify:hover:not(:disabled) { background: #cdefdd; border-color: var(--green-500); }
+
+/* Destructive, so it stays quiet until reached for. */
+.d-reject {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-400);
+}
+
+.d-reject:hover:not(:disabled) {
+  border-color: #f5cbc9;
+  background: var(--rose-100);
+  color: var(--rose-600);
+}
+
+/* ==========================================================================
+ * Candidate portal - the document checklist
+ *
+ * Seven identical cards, each repeating "Not uploaded" three times and the file
+ * format rules once more, gave a candidate nothing to grab onto. This turns it
+ * into a numbered checklist with one progress summary at the top: the number
+ * tells you where you are, and a tick replaces it when that one is done.
+ * ======================================================================== */
+
+.pd-progress {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--blue-200);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, #f4f8ff, var(--blue-050));
+}
+
+.pd-progress-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pd-progress-count {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+
+.pd-progress-count b { color: var(--blue-700); }
+
+.pd-progress-hint { font-size: 12px; color: var(--ink-400); }
+
+.pd-bar {
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: #dbe4f6;
+  overflow: hidden;
+}
+
+.pd-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background-image: linear-gradient(90deg, var(--blue-500), var(--teal-500));
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pd-next {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-700);
+}
+
+.pd-next b { color: var(--blue-700); font-weight: 600; }
+
+/* ---- one checklist item ---- */
+
+.pd-item { display: flex; gap: 13px; padding: 16px 18px; }
+
+/* The step number, which becomes a tick once that document is in. */
+.pd-num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-400);
+}
+
+.pd-num svg { width: 13px; height: 13px; }
+
+.pd-item--done .pd-num { border-color: var(--green-500); background: var(--green-500); color: #fff; }
+.pd-item--review .pd-num { border-color: var(--teal-500); background: var(--teal-100); color: var(--teal-600); }
+.pd-item--rejected .pd-num { border-color: var(--rose-500); background: var(--rose-100); color: var(--rose-600); }
+.pd-item--next .pd-num { border-color: var(--blue-500); color: var(--blue-700); }
+
+.pd-body { flex: 1; min-width: 0; }
+
+.pd-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.pd-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.pd-req {
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: #eef2fa;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+
+.pd-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+
+.pd-file b { font-weight: 500; color: var(--ink-700); }
+
+.pd-upload { margin-top: 12px; }
+
+.pd-course { max-width: 22rem; margin-bottom: 10px; }
+
+.pd-rejected {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--rose-500);
+  border-radius: 0 6px 6px 0;
+  background: var(--rose-100);
+}
+
+.pd-rejected b {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rose-600);
+}
+
+.pd-rejected p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: #8e1010; }
+
+.pd-done-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--green-600);
+}
+
+/* ==========================================================================
+ * Date picker
+ *
+ * Replaces <input type="date">. The browser's own calendar is drawn outside the
+ * page, so no stylesheet can reach it - the only way to make it match the rest
+ * of the app is to render our own.
+ * ======================================================================== */
+
+.dp { position: relative; }
+
+.dp-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.dp-trigger:hover:not(:disabled) { border-color: var(--blue-200); }
+
+.dp-trigger:focus-visible,
+.dp-trigger.is-open {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(47, 111, 216, 0.18);
+}
+
+.dp-trigger:disabled { background: #f6f8fc; color: var(--ink-300); cursor: not-allowed; }
+.dp-trigger.is-empty { color: var(--ink-300); }
+.dp-trigger.is-invalid { border-color: var(--rose-500); box-shadow: 0 0 0 3px rgba(216,83,79,.16); }
+.dp-trigger svg { flex-shrink: 0; width: 16px; height: 16px; color: var(--ink-400); }
+
+/* ---- the panel ---- */
+
+.dp-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 296px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-lg);
+  animation: dp-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dp-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dp-selects { display: flex; gap: 6px; flex: 1; min-width: 0; }
+
+/* Month and year are dropdowns, not just arrows - a date of birth can be
+   decades back, and stepping there one month at a time is unusable. */
+.dp-select {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font: inherit;
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+
+.dp-select:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 1px; }
+
+.dp-nav {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink-400);
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.dp-nav:hover:not(:disabled) { background: var(--blue-050); border-color: var(--blue-200); color: var(--blue-700); }
+.dp-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+.dp-nav svg { width: 14px; height: 14px; }
+
+.dp-week,
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+.dp-week span {
+  padding: 4px 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-300);
+}
+
+.dp-day {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-700);
+  cursor: pointer;
+  transition: background-color 130ms ease, color 130ms ease;
+}
+
+.dp-day:hover:not(:disabled) { background: var(--blue-050); color: var(--blue-700); }
+.dp-day.is-outside { color: var(--ink-300); }
+.dp-day:disabled { color: #cfd6e6; cursor: not-allowed; }
+
+/* Today is outlined; the chosen day is filled. */
+.dp-day.is-today { box-shadow: inset 0 0 0 1px var(--blue-200); font-weight: 600; }
+
+.dp-day.is-selected {
+  background-image: linear-gradient(135deg, var(--blue-700), var(--blue-500));
+  color: #fff;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.dp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hair);
+}
+
+.dp-foot button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--blue-600);
+  cursor: pointer;
+}
+
+.dp-foot button:hover { background: var(--blue-050); }
+.dp-foot button.is-muted { color: var(--ink-400); }

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AuditTimeline } from '../../components/hr/AuditTimeline'
 import { CandidateDetailsPanel } from '../../components/hr/CandidateDetailsPanel'
 import { DocumentReviewPanel } from '../../components/hr/DocumentReviewPanel'
-import { OfferBondPanel } from '../../components/hr/OfferBondPanel'
 import { PortalLinkCard } from '../../components/hr/PortalLinkCard'
 import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
@@ -12,10 +11,10 @@ import { LoadingState } from '../../components/ui/Spinner'
 import { StatusPill } from '../../components/ui/StatusPill'
 import { useToast } from '../../context/ToastContext'
 import { hrService } from '../../services/hrService'
-import { formatDateTime, initialsOf } from '../../utils/format'
+import { formatDate, initialsOf } from '../../utils/format'
+import { hueOf } from '../../utils/avatar'
 import {
   awaitingReviewCount,
-  bondStatusMeta,
   documentProgressMeta,
   offerStatusMeta,
   pipelineStatusMeta,
@@ -24,7 +23,6 @@ import {
 const TABS = [
   { key: 'details', label: 'Details' },
   { key: 'documents', label: 'Documents' },
-  { key: 'offer-bond', label: 'Offer & Bond' },
   { key: 'audit', label: 'Audit trail' },
 ]
 
@@ -35,6 +33,9 @@ const TABS = [
 export function CandidateDetailPage() {
   const { candidateId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  /* Back to the filtered list it was opened from, not a bare one. */
+  const backTo = location.state?.from || '/candidates'
   const toast = useToast()
 
   const [detail, setDetail] = useState(null)
@@ -73,8 +74,8 @@ export function CandidateDetailPage() {
           action={
             <div className="flex flex-wrap justify-center gap-2.5">
               <Button onClick={load}>Try again</Button>
-              <Button variant="secondary" onClick={() => navigate('/candidates')}>
-                Back to pipeline
+              <Button variant="secondary" onClick={() => navigate(backTo)}>
+                Back to records
               </Button>
             </div>
           }
@@ -86,14 +87,13 @@ export function CandidateDetailPage() {
   const candidate = detail.candidate
   const status = pipelineStatusMeta(candidate)
   const offer = offerStatusMeta(candidate.offerStatus)
-  const bond = bondStatusMeta(candidate.bondStatus)
   const awaitingReview = awaitingReviewCount(candidate)
   const docs = documentProgressMeta(candidate)
 
   return (
     <>
       <Link
-        to="/candidates"
+        to={backTo}
         className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted
           transition hover:text-brand"
       >
@@ -101,63 +101,72 @@ export function CandidateDetailPage() {
           strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 12H5m7-7-7 7 7 7" />
         </svg>
-        Back to pipeline
+        Back to records
       </Link>
 
-      <section className="cf-card mb-5 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-tint
-            text-[17px] font-semibold text-brand">
+      <section className="c-panel r-head">
+        <div className="r-id">
+          <span className={`r-av c-ring--h${hueOf(candidate.name)}`}>
             {initialsOf(candidate.name)}
           </span>
 
-          <div className="min-w-[240px] flex-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">{candidate.name}</h1>
+          <div className="r-id-text">
+            <div className="r-name-row">
+              <h1>{candidate.name}</h1>
               <StatusPill label={status.label} tone={status.tone} />
             </div>
-            <p className="mt-1 text-[13.5px] text-ink-muted">
+            <p className="r-contact">
               {candidate.email} &middot; {candidate.role} &middot; {candidate.department}
             </p>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[12px] text-ink-muted">
-              <span>Created {formatDateTime(candidate.createdAt)}</span>
-              <span>
-                {candidate.submittedForReviewAt
-                  ? `Submitted ${formatDateTime(candidate.submittedForReviewAt)}`
-                  : 'Not submitted by the candidate yet'}
-              </span>
-              {candidate.completedAt && <span>Completed {formatDateTime(candidate.completedAt)}</span>}
+
+            {/* Three milestones, each labelled - rather than three timestamps
+                run together in one muted sentence. */}
+            <div className="r-track">
+              <div className="r-step">
+                <span className="r-step-label">Created</span>
+                <span className="r-step-value">{formatDate(candidate.createdAt)}</span>
+              </div>
+              <div className="r-step">
+                <span className="r-step-label">Submitted</span>
+                <span className={`r-step-value${candidate.submittedForReviewAt ? '' : ' is-waiting'}`}>
+                  {candidate.submittedForReviewAt
+                    ? formatDate(candidate.submittedForReviewAt)
+                    : 'Waiting'}
+                </span>
+              </div>
+              <div className="r-step">
+                <span className="r-step-label">Completed</span>
+                <span className={`r-step-value${candidate.completedAt ? '' : ' is-waiting'}`}>
+                  {candidate.completedAt ? formatDate(candidate.completedAt) : 'Not yet'}
+                </span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <dl className="grid w-full max-w-[300px] gap-2.5 text-[12.5px]">
-            <div>
-              <dt className="mb-1 flex items-center justify-between gap-3 text-ink-muted">
-                <span>Documents uploaded</span>
-                <span className="text-[11.5px]">{docs.verified} verified</span>
-              </dt>
-              <dd>
-                <ProgressBar value={docs.uploaded} total={docs.total} tone={docs.tone} />
-                <span className="mt-1 block text-[11.5px] text-ink-muted">{docs.caption}</span>
-              </dd>
+        <div className="r-meta">
+          <div>
+            <div className="r-meta-row">
+              <span className="r-meta-label">Documents</span>
+              <span className="r-meta-figure">{docs.uploaded}/{docs.total}</span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-ink-muted">Offer</dt>
-              <dd><StatusPill label={offer.label} tone={offer.tone} /></dd>
+            <div style={{ marginTop: 8 }}>
+              <ProgressBar value={docs.uploaded} total={docs.total} tone={docs.tone} showLabel={false} />
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-ink-muted">Bond</dt>
-              <dd><StatusPill label={bond.label} tone={bond.tone} /></dd>
-            </div>
-          </dl>
+            <span className="r-meta-note" style={{ marginTop: 6, display: 'block' }}>{docs.caption}</span>
+          </div>
+          <div className="r-meta-row" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+            <span className="r-meta-label">Offer</span>
+            <StatusPill label={offer.label} tone={offer.tone} />
+          </div>
         </div>
       </section>
 
       {awaitingReview > 0 && (
-        <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-card
+        <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded
           border border-brand/30 bg-brand-tint/60 px-5 py-3.5">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded
               bg-brand text-white">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor"
                 strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -197,7 +206,7 @@ export function CandidateDetailPage() {
           >
             {item.label}
             {item.key === 'documents' && awaitingReview > 0 && (
-              <span className="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              <span className="ml-2 rounded-[3px] bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
                 {awaitingReview}
               </span>
             )}
@@ -206,7 +215,7 @@ export function CandidateDetailPage() {
       </nav>
 
       {tab === 'details' && (
-        <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+        <div className="grid items-start gap-5 xl:grid-cols-[1.4fr_1fr]">
           <section className="cf-card p-5">
             <CandidateDetailsPanel profile={detail.profile} />
           </section>
@@ -227,15 +236,6 @@ export function CandidateDetailPage() {
             onChanged={() => load()}
           />
         </section>
-      )}
-
-      {tab === 'offer-bond' && (
-        <OfferBondPanel
-          candidate={candidate}
-          offer={detail.offer}
-          bond={detail.bond}
-          onChanged={load}
-        />
       )}
 
       {tab === 'audit' && (

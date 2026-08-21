@@ -6,8 +6,7 @@ public enum ActorType {
 
     HR("hr"),
     CANDIDATE("candidate"),
-    SYSTEM("system"),
-    SIGNATURE_PROVIDER("signature_provider");
+    SYSTEM("system");
 
     private final String code;
 

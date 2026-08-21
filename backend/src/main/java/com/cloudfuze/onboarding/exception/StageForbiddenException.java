@@ -29,11 +29,6 @@ public class StageForbiddenException extends ApiException {
                         + "the offer unlocks once every required document is approved.");
     }
 
-    public static StageForbiddenException bondLocked(Stage current) {
-        return new StageForbiddenException(current, Stage.OFFER_ACCEPTED,
-                "Bond signing is locked. Please accept your offer letter before proceeding to bond signing.");
-    }
-
     public static StageForbiddenException documentsClosed(Stage current) {
         return new StageForbiddenException(current, Stage.DOCS_PENDING,
                 "Document uploads are closed because your documents have already been approved.");

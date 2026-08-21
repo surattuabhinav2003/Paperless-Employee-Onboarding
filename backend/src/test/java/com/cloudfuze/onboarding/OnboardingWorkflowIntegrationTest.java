@@ -5,7 +5,6 @@ import com.cloudfuze.onboarding.model.DocumentStatus;
 import com.cloudfuze.onboarding.model.HrUser;
 import com.cloudfuze.onboarding.model.Stage;
 import com.cloudfuze.onboarding.repository.AuditLogRepository;
-import com.cloudfuze.onboarding.repository.BondRepository;
 import com.cloudfuze.onboarding.repository.CandidateDocumentRepository;
 import com.cloudfuze.onboarding.repository.CandidateProfileRepository;
 import com.cloudfuze.onboarding.repository.CandidateRepository;
@@ -44,8 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * End-to-end coverage of the gated onboarding workflow, driven through the real
- * HTTP API: HR authentication, portal tokens, document review, the offer gate,
- * the bond gate and SignatureOne completion.
+ * HTTP API: HR authentication, portal tokens, document review, and the offer
+ * gate whose acceptance completes onboarding.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -70,8 +69,6 @@ class OnboardingWorkflowIntegrationTest {
     @Autowired
     private OfferRepository offerRepository;
     @Autowired
-    private BondRepository bondRepository;
-    @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -84,7 +81,6 @@ class OnboardingWorkflowIntegrationTest {
         profileRepository.deleteAll();
         documentRepository.deleteAll();
         offerRepository.deleteAll();
-        bondRepository.deleteAll();
         candidateRepository.deleteAll();
         hrUserRepository.deleteAll();
 
@@ -716,7 +712,7 @@ class OnboardingWorkflowIntegrationTest {
                 .andExpect(status().isForbidden());
 
         // The candidate is only ever shown the step they are on: no padlocked
-        // offer or bond tile, and no explanation of a stage they cannot reach.
+        // offer tile, and no explanation of a stage they cannot reach.
         mockMvc.perform(get("/api/portal/{token}", onboarding.token()))
                 .andExpect(jsonPath("$.offerAvailable").value(false))
                 .andExpect(jsonPath("$.currentStep").value("documents"))
@@ -724,7 +720,7 @@ class OnboardingWorkflowIntegrationTest {
                 .andExpect(jsonPath("$.steps[0].key").value("documents"))
                 .andExpect(jsonPath("$.steps[0].state").value("current"))
                 .andExpect(jsonPath("$.steps[*].key").value(org.hamcrest.Matchers.not(
-                        org.hamcrest.Matchers.hasItems("offer", "bond"))));
+                        org.hamcrest.Matchers.hasItem("offer"))));
     }
 
     @Test
@@ -740,7 +736,8 @@ class OnboardingWorkflowIntegrationTest {
                 .andExpect(jsonPath("$.steps[*].key").value(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.hasItem("documents"))));
 
-        // And once the offer is accepted, only the bond step remains.
+        // And once the offer is accepted the same step remains, now completed -
+        // offer acceptance is the end of the workflow.
         uploadOffer(onboarding.candidateId());
         mockMvc.perform(post("/api/portal/{token}/offer/accept", onboarding.token())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -748,9 +745,10 @@ class OnboardingWorkflowIntegrationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/portal/{token}", onboarding.token()))
-                .andExpect(jsonPath("$.currentStep").value("bond"))
+                .andExpect(jsonPath("$.currentStep").value("offer"))
                 .andExpect(jsonPath("$.steps.length()").value(1))
-                .andExpect(jsonPath("$.steps[0].key").value("bond"));
+                .andExpect(jsonPath("$.steps[0].key").value("offer"))
+                .andExpect(jsonPath("$.steps[0].state").value("completed"));
     }
 
     @Test
@@ -805,91 +803,111 @@ class OnboardingWorkflowIntegrationTest {
     }
 
     // ------------------------------------------------------------------
-    // 12-16. The bond gate and SignatureOne completion
+    // 12-16. Offer acceptance completes onboarding
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("The bond API is forbidden until the offer is accepted")
-    void bondLockedBeforeOfferAcceptance() throws Exception {
-        Onboarding onboarding = approveAllDocuments(createCandidate("bond.locked@example.com"));
+    @DisplayName("Accepting the offer completes onboarding and is only possible once")
+    void offerAcceptanceCompletesOnboarding() throws Exception {
+        Onboarding onboarding = approveAllDocuments(createCandidate("offer.complete@example.com"));
         uploadOffer(onboarding.candidateId());
-        uploadBond(onboarding.candidateId());
 
-        mockMvc.perform(get("/api/portal/{token}/bond", onboarding.token()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("STAGE_FORBIDDEN"))
-                .andExpect(jsonPath("$.details.requiredStage").value("offer_accepted"));
-
-        mockMvc.perform(post("/api/portal/{token}/bond/sign", onboarding.token())
+        mockMvc.perform(post("/api/portal/{token}/offer/accept", onboarding.token())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(signPayload()))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(get("/api/portal/{token}/bond/file", onboarding.token()))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("Bond signing completes onboarding and stores the signature evidence")
-    void bondSigningCompletesOnboarding() throws Exception {
-        Onboarding onboarding = acceptOffer(approveAllDocuments(createCandidate("bond.sign@example.com")));
-        uploadBond(onboarding.candidateId());
-
-        mockMvc.perform(get("/api/portal/{token}/bond", onboarding.token()))
+                        .content(acceptPayload()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.prepared").value(true))
-                .andExpect(jsonPath("$.canSign").value(true))
-                .andExpect(jsonPath("$.documentVersion").value("v2.1"));
+                .andExpect(jsonPath("$.status").value("accepted"))
+                .andExpect(jsonPath("$.canAccept").value(false));
 
-        mockMvc.perform(post("/api/portal/{token}/bond/sign", onboarding.token())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signPayload()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("signed"))
-                .andExpect(jsonPath("$.signatureRef").isNotEmpty())
-                .andExpect(jsonPath("$.canSign").value(false));
-
-        var bond = bondRepository.findByCandidateId(onboarding.candidateId()).orElseThrow();
-        assertThat(bond.getSignedAt()).isNotNull();
-        assertThat(bond.getSignatureRequestId()).isNotBlank();
-        assertThat(bond.getSignedDocumentKey()).isNotBlank();
-        assertThat(bond.getSignedDocumentHash()).isNotBlank();
-        assertThat(bond.getSignerName()).isEqualTo("Priya Sharma");
-        assertThat(bond.getAuditTrail()).extracting("eventType")
-                .contains("signature_initiated", "signature_applied");
-
-        assertThat(stageOf(onboarding.candidateId())).isEqualTo(Stage.BOND_SIGNED);
+        assertThat(stageOf(onboarding.candidateId())).isEqualTo(Stage.OFFER_ACCEPTED);
         assertThat(candidateRepository.findById(onboarding.candidateId()).orElseThrow().getCompletedAt())
                 .isNotNull();
 
         mockMvc.perform(get("/api/portal/{token}", onboarding.token()))
                 .andExpect(jsonPath("$.onboardingComplete").value(true))
                 .andExpect(jsonPath("$.headline").value("Onboarding Complete"))
-                .andExpect(jsonPath("$.currentStep").value("bond"))
+                .andExpect(jsonPath("$.currentStep").value("offer"))
                 .andExpect(jsonPath("$.steps.length()").value(1))
-                .andExpect(jsonPath("$.steps[0].key").value("bond"))
+                .andExpect(jsonPath("$.steps[0].key").value("offer"))
                 .andExpect(jsonPath("$.steps[0].state").value("completed"));
 
-        // Signing twice is refused.
-        mockMvc.perform(post("/api/portal/{token}/bond/sign", onboarding.token())
+        // Accepting twice is refused.
+        mockMvc.perform(post("/api/portal/{token}/offer/accept", onboarding.token())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(signPayload()))
+                        .content(acceptPayload()))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("BOND_ALREADY_SIGNED"));
+                .andExpect(jsonPath("$.code").value("OFFER_ALREADY_ACCEPTED"));
+    }
 
-        mockMvc.perform(get("/api/portal/{token}/bond/signed-file", onboarding.token()))
-                .andExpect(status().isOk());
+    @Test
+    @DisplayName("Personal details are refused without an alternate contact number")
+    void alternateContactNumberIsRequired() throws Exception {
+        Onboarding onboarding = createCandidate("alt.contact@example.com");
+
+        // Omitted entirely.
+        mockMvc.perform(put("/api/portal/{token}/profile", onboarding.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fullNameAsPerAadhaar": "Priya Sharma",
+                                  "personalEmail": "priya.personal@example.com",
+                                  "contactNumber": "9876543210",
+                                  "dateOfBirth": "2001-04-17",
+                                  "gender": "female",
+                                  "fathersName": "Rakesh Sharma",
+                                  "permanentAddress": "12-4-56 Banjara Hills, Hyderabad 500034",
+                                  "bloodGroup": "o_positive"
+                                }"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.fieldErrors.alternateContactNumber").exists());
+
+        // Present but blank - the old rule allowed this.
+        mockMvc.perform(put("/api/portal/{token}/profile", onboarding.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(profilePayload().replace("\"9876500000\"", "\"\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.alternateContactNumber").exists());
+
+        // And it still has to look like a phone number.
+        mockMvc.perform(put("/api/portal/{token}/profile", onboarding.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(profilePayload().replace("\"9876500000\"", "\"nope\"")))
+                .andExpect(status().isBadRequest());
+
+        // A valid one is accepted.
+        mockMvc.perform(put("/api/portal/{token}/profile", onboarding.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(profilePayload()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alternateContactNumber").value("9876500000"));
+    }
+
+    @Test
+    @DisplayName("The bond feature is gone: no bond route exists on either API")
+    void bondEndpointsNoLongerExist() throws Exception {
+        Onboarding onboarding = acceptOffer(approveAllDocuments(createCandidate("no.bond@example.com")));
+
+        // Candidate portal - a token that authenticates fine still has no bond route.
+        mockMvc.perform(get("/api/portal/{token}/bond", onboarding.token()))
+                .andExpect(status().isNotFound());
+
+        // HR side.
+        mockMvc.perform(get("/api/hr/candidates/{id}/bond", onboarding.candidateId())
+                        .header("Authorization", "Bearer " + hrToken))
+                .andExpect(status().isNotFound());
+
+        // And the stage vocabulary no longer advertises one.
+        mockMvc.perform(get("/api/meta"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stages[*].value").value(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.hasItem("bond_signed"))));
     }
 
     @Test
     @DisplayName("HR sees the full audit trail and the completed pipeline row")
     void auditTrailAndPipelineReflectCompletion() throws Exception {
         Onboarding onboarding = acceptOffer(approveAllDocuments(createCandidate("audit@example.com")));
-        uploadBond(onboarding.candidateId());
-        mockMvc.perform(post("/api/portal/{token}/bond/sign", onboarding.token())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signPayload()))
-                .andExpect(status().isOk());
 
         MvcResult auditResult = mockMvc.perform(get("/api/hr/candidates/{id}/audit", onboarding.candidateId())
                         .header("Authorization", "Bearer " + hrToken))
@@ -899,22 +917,21 @@ class OnboardingWorkflowIntegrationTest {
         List<String> events = audit.findValuesAsText("eventType");
         assertThat(events).contains("candidate_created", "invitation_generated", "document_uploaded",
                 "document_verified", "documents_approved", "offer_uploaded", "offer_accepted",
-                "signature_initiated", "bond_signed", "onboarding_completed");
+                "onboarding_completed");
         assertThat(audit.get(0).has("ipAddress")).isTrue();
 
         mockMvc.perform(get("/api/hr/candidates/{id}", onboarding.candidateId())
                         .header("Authorization", "Bearer " + hrToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.candidate.stage").value("bond_signed"))
-                .andExpect(jsonPath("$.bond.status").value("signed"))
+                .andExpect(jsonPath("$.candidate.stage").value("offer_accepted"))
                 .andExpect(jsonPath("$.offer.status").value("accepted"))
                 .andExpect(jsonPath("$.documents.length()").value(4));
 
         mockMvc.perform(get("/api/hr/dashboard/stats").header("Authorization", "Bearer " + hrToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.bondsSigned").value(1))
+                .andExpect(jsonPath("$.onboardingComplete").value(1))
                 .andExpect(jsonPath("$.activeCandidates").value(0))
-                .andExpect(jsonPath("$.stageBreakdown.bond_signed").value(1));
+                .andExpect(jsonPath("$.stageBreakdown.offer_accepted").value(1));
     }
 
     @Test
@@ -1016,11 +1033,6 @@ class OnboardingWorkflowIntegrationTest {
                 {"acknowledgementName":"Priya Sharma","accepted":true}""";
     }
 
-    private String signPayload() {
-        return """
-                {"signerFullName":"Priya Sharma","consent":true}""";
-    }
-
     private org.springframework.test.web.servlet.ResultActions upload(String token, String type, String filename)
             throws Exception {
         return upload(token, type, filename, null);
@@ -1085,16 +1097,6 @@ class OnboardingWorkflowIntegrationTest {
                         .header("Authorization", "Bearer " + hrToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("sent"));
-    }
-
-    private void uploadBond(UUID candidateId) throws Exception {
-        mockMvc.perform(multipart("/api/hr/candidates/{id}/bond", candidateId)
-                        .file(new MockMultipartFile("file", "employment-bond.pdf", "application/pdf",
-                                "%PDF-1.4 employment bond".getBytes()))
-                        .param("documentVersion", "v2.1")
-                        .header("Authorization", "Bearer " + hrToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentVersion").value("v2.1"));
     }
 
     private UUID documentId(UUID candidateId, String typeCode) {

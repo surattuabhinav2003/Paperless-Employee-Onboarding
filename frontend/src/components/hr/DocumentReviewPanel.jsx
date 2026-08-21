@@ -70,51 +70,51 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
     <>
       {/* Rows rather than a fixed-width table, so the review actions stay
           reachable in both the full page and the narrower candidate drawer. */}
-      <ul className="divide-y divide-surface-line">
+      <ul className="d-list">
         {documents.map((doc) => {
           const meta = documentStatusMeta(doc.status)
           const busy = busyId === doc.id
+          const extension = (doc.filename || '').split('.').pop()
           return (
-            <li key={doc.type} className="px-5 py-4 transition-colors hover:bg-brand-tint/25">
-              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-                <div className="min-w-[220px] flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[14px] font-medium text-ink">{doc.typeLabel}</span>
+            <li key={doc.type}>
+              <div className={`d-row d-row--${doc.status}`}>
+                <span className="d-tile" aria-hidden="true">
+                  {doc.filename ? extension : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+                      strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+                      <path d="M14 3v5h5M6 3h9l5 5v13H6V3Z" />
+                    </svg>
+                  )}
+                </span>
+
+                <div className="d-body">
+                  <div className="d-title-row">
+                    <span className="d-title">{doc.typeLabel}</span>
                     <StatusPill label={meta.label} tone={meta.tone} />
-                    <span className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-ink-muted">
+                    <span className="d-req">
                       {doc.mandatory ? 'Mandatory' : 'Optional'}
                       {doc.version > 1 ? ` · v${doc.version}` : ''}
                     </span>
-                    {doc.courseLabel && (
-                      <span className="rounded-full bg-brand-tint px-2 py-0.5 text-[11px] font-medium text-brand">
-                        {doc.courseLabel}
-                      </span>
-                    )}
+                    {doc.courseLabel && <span className="d-course">{doc.courseLabel}</span>}
                   </div>
 
-                  {doc.filename ? (
-                    <p className="mt-1 truncate text-[12.5px] text-ink-muted">
-                      {doc.filename} &middot; {formatBytes(doc.sizeBytes)} &middot; uploaded{' '}
-                      {formatDateTime(doc.uploadedAt)}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-[12.5px] text-ink-muted">Not uploaded yet.</p>
-                  )}
-
-                  <p className="mt-0.5 text-[12.5px] text-ink-muted">
+                  {/* One meta line: the file, and who decided what. "Not reviewed
+                      yet" is dropped - the Awaiting review pill already says it. */}
+                  <p className="d-meta">
+                    {doc.filename
+                      ? `${doc.filename} · ${formatBytes(doc.sizeBytes)} · uploaded ${formatDateTime(doc.uploadedAt)}`
+                      : 'Not uploaded yet.'}
                     {doc.reviewedAt
-                      ? `Reviewed by ${doc.reviewedBy} on ${formatDateTime(doc.reviewedAt)}`
-                      : 'Not reviewed yet'}
+                      ? ` · Reviewed by ${doc.reviewedBy} on ${formatDateTime(doc.reviewedAt)}`
+                      : ''}
                   </p>
 
                   {doc.status === 'rejected' && doc.rejectReason && (
-                    <p className="mt-2 rounded bg-[#FFECEC] px-2.5 py-1.5 text-[12px] leading-5 text-[#8E1010]">
-                      {doc.rejectReason}
-                    </p>
+                    <p className="d-reason">{doc.rejectReason}</p>
                   )}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="d-actions">
                   {doc.downloadUrl && (
                     <Button variant="subtle" size="sm" onClick={() => setViewing(doc)}>
                       View
@@ -122,12 +122,21 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
                   )}
                   {!readOnly && doc.status === 'submitted' && (
                     <>
-                      <Button variant="success" size="sm" loading={busy} onClick={() => verify(doc)}>
-                        Verify
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
+                      <button
+                        type="button"
+                        className="d-btn d-verify"
+                        disabled={busy}
+                        onClick={() => verify(doc)}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"
+                          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                        {busy ? 'Verifying' : 'Verify'}
+                      </button>
+                      <button
+                        type="button"
+                        className="d-btn d-reject"
                         disabled={busy}
                         onClick={() => {
                           setRejecting(doc)
@@ -136,11 +145,11 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
                         }}
                       >
                         Reject
-                      </Button>
+                      </button>
                     </>
                   )}
                   {doc.status === 'pending' && (
-                    <span className="text-[12px] text-ink-muted">Waiting on candidate</span>
+                    <span className="d-waiting">Waiting on candidate</span>
                   )}
                 </div>
               </div>

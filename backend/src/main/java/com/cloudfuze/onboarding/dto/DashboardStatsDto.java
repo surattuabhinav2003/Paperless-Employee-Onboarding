@@ -10,13 +10,13 @@ import java.util.Map;
  * @param documentsPending  requested documents still waiting on the candidate
  *                          (never uploaded, or rejected and awaiting re-upload)
  * @param awaitingReview    uploaded documents waiting for an HR decision
- * @param bondsSigned       completed bond signatures
+ * @param onboardingComplete candidates who have accepted their offer
  */
 public record DashboardStatsDto(
         long activeCandidates,
         long documentsPending,
         long awaitingReview,
-        long bondsSigned,
+        long onboardingComplete,
         long totalCandidates,
         long offersAwaitingAcceptance,
         Map<String, Long> stageBreakdown,

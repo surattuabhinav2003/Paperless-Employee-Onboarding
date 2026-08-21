@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   awaitingReviewCount,
   documentProgressMeta,
-  bondStatusMeta,
   documentStatusMeta,
   offerStatusMeta,
   pipelineStatusMeta,
@@ -13,8 +12,9 @@ describe('status metadata', () => {
   it('maps every backend stage to a label and tone', () => {
     expect(stageMeta('docs_pending').label).toBe('Documents Pending')
     expect(stageMeta('docs_approved').label).toBe('Verified')
-    expect(stageMeta('offer_accepted').label).toBe('Offer Accepted')
-    expect(stageMeta('bond_signed').label).toBe('Onboarding Complete')
+    expect(stageMeta('offer_accepted').label).toBe('Complete')
+    // bond_signed no longer exists as a stage, so it falls through to the default.
+    expect(stageMeta('bond_signed').tone).toBe('grey')
   })
 
   it('falls back safely for unknown values', () => {
@@ -22,9 +22,13 @@ describe('status metadata', () => {
     expect(documentStatusMeta(undefined).tone).toBe('grey')
   })
 
-  it('treats missing offer and bond as not prepared', () => {
-    expect(offerStatusMeta(null).label).toBe('Not prepared')
-    expect(bondStatusMeta(undefined).label).toBe('Not prepared')
+  it('reduces the offer to sent or signed', () => {
+    expect(offerStatusMeta(null).label).toBe('Not sent')
+    expect(offerStatusMeta(undefined).label).toBe('Not sent')
+    expect(offerStatusMeta('sent').label).toBe('Sent')
+    // Viewed is not a state HR acts on differently, so it reads as Sent.
+    expect(offerStatusMeta('viewed').label).toBe('Sent')
+    expect(offerStatusMeta('accepted').label).toBe('Signed')
   })
 
   it('maps document statuses used by the portal', () => {
@@ -67,8 +71,8 @@ describe('pipeline status', () => {
 
   it('reads as verified once HR approves the stage', () => {
     expect(pipelineStatusMeta({ ...base, stage: 'docs_approved' }).label).toBe('Verified')
-    expect(pipelineStatusMeta({ ...base, stage: 'offer_accepted' }).label).toBe('Offer Accepted')
-    expect(pipelineStatusMeta({ ...base, stage: 'bond_signed' }).label).toBe('Onboarding Complete')
+    expect(pipelineStatusMeta({ ...base, stage: 'offer_accepted' }).label)
+      .toBe('Complete')
   })
 
   it('counts only documents actually sitting in HR queue', () => {

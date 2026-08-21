@@ -13,14 +13,14 @@ export function ProgressTracker({ steps = [] }) {
         return (
           <li key={step.key}>
             <div
-              className={`flex items-start gap-3 rounded-card border p-3.5 ${
+              className={`cf-spine flex items-start gap-3 rounded border p-4 pl-5 ${
                 isCompleted
-                  ? 'border-accent-green/35 bg-[#F3FCF7]'
-                  : 'border-brand/35 bg-brand-tint/60'
+                  ? 'cf-spine-green border-accent-green/35 bg-[#F3FCF7]'
+                  : 'border-brand/30 bg-white'
               }`}
             >
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded text-white ${
                   isCompleted ? 'bg-accent-green' : 'bg-brand'
                 }`}
               >
@@ -33,8 +33,7 @@ export function ProgressTracker({ steps = [] }) {
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-[13.5px] font-semibold text-ink">{step.title}</span>
                   {!isCompleted && (
-                    <span className="rounded-full bg-brand px-1.5 py-0.5 text-[9.5px] font-semibold
-                      uppercase tracking-[0.1em] text-white">
+                    <span className="cf-micro rounded-[3px] bg-brand px-1.5 py-1 text-white">
                       Your step now
                     </span>
                   )}

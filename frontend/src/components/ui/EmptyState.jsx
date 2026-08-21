@@ -8,7 +8,7 @@ export function EmptyState({ title, message, action, icon = 'inbox', className =
   }
   return (
     <div className={`flex flex-col items-center justify-center px-6 py-14 text-center ${className}`}>
-      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-tint text-brand">
+      <span className="mb-4 flex h-11 w-11 items-center justify-center rounded bg-brand-tint text-brand ring-1 ring-inset ring-brand/15">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"
           strokeLinecap="round" strokeLinejoin="round">
           <path d={paths[icon] || paths.inbox} />
@@ -24,7 +24,7 @@ export function EmptyState({ title, message, action, icon = 'inbox', className =
 export function ErrorState({ title = 'Something went wrong', message, action, className = '' }) {
   return (
     <div className={`flex flex-col items-center justify-center px-6 py-14 text-center ${className}`}>
-      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#FFECEC] text-accent-red">
+      <span className="mb-4 flex h-11 w-11 items-center justify-center rounded bg-[#FFECEC] text-accent-red ring-1 ring-inset ring-accent-red/20">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M12 8v5m0 3h.01" />
           <circle cx="12" cy="12" r="9" />

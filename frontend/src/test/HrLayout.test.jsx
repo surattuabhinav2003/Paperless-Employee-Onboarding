@@ -30,7 +30,9 @@ describe('HrLayout sidebar', () => {
 
   it('starts expanded with labels and the signed-in user', () => {
     renderLayout()
-    expect(screen.getByText('Offers & Bonds')).toBeInTheDocument()
+    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Candidate Records')).toBeInTheDocument()
+    expect(screen.getByText('Offer Letters')).toBeInTheDocument()
     expect(screen.getByText('Publish offers, track signatures')).toBeInTheDocument()
     expect(screen.getByText('CloudFuze HR Admin')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse navigation' })).toBeInTheDocument()
@@ -44,7 +46,8 @@ describe('HrLayout sidebar', () => {
 
     // Labels and hints go, but every destination is still there and titled.
     expect(screen.queryByText('Publish offers, track signatures')).not.toBeInTheDocument()
-    expect(screen.getByTitle('Offers & Bonds')).toBeInTheDocument()
+    expect(screen.getByTitle('Candidate Records')).toBeInTheDocument()
+    expect(screen.getByTitle('Offer Letters')).toBeInTheDocument()
     expect(screen.getByTitle('Log out')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
     // The page itself keeps rendering while the rail animates.
