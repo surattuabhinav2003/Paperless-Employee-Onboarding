@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { CandidateTable } from '../../components/hr/CandidateTable'
+import { BulkInviteModal } from '../../components/hr/BulkInviteModal'
 import { InviteLinkModal } from '../../components/hr/InviteLinkModal'
 import { NewCandidateModal } from '../../components/hr/NewCandidateModal'
 import { Button } from '../../components/ui/Button'
@@ -24,6 +25,7 @@ const ICONS = {
 export function DashboardPage() {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [invitation, setInvitation] = useState(null)
 
   const stats = useAsync(() => hrService.dashboardStats(), [])
@@ -61,7 +63,12 @@ export function DashboardPage() {
       <PageHeader
         breadcrumb="HR console"
         title="Onboarding dashboard"
-        actions={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setBulkOpen(true)}>Invite several</Button>
+            <Button onClick={() => setCreateOpen(true)}>New candidate</Button>
+          </>
+        }
       />
 
       <div className="c-dash">
@@ -104,6 +111,13 @@ export function DashboardPage() {
         onClose={() => setCreateOpen(false)}
         documentTypes={metadata.data?.documentTypes || []}
         onCreated={onCreated}
+      />
+
+      <BulkInviteModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        documentTypes={metadata.data?.documentTypes || []}
+        onCreated={() => stats.reload().catch(() => {})}
       />
 
       <InviteLinkModal

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
  *
  * `<input type="date">` opens the browser's own calendar, which is drawn outside
  * the document - no stylesheet can reach it, so it always looks like Chrome
- * rather than like CloudFuze. This renders the calendar itself instead.
+ * rather than like Neutara. This renders the calendar itself instead.
  *
  * Value and onChange use the same `YYYY-MM-DD` strings the native input did, so
  * callers and the API are unchanged.

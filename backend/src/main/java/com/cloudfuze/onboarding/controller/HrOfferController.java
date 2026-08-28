@@ -1,6 +1,7 @@
 package com.cloudfuze.onboarding.controller;
 
 import com.cloudfuze.onboarding.dto.OfferDto;
+import com.cloudfuze.onboarding.dto.SaveOfferFieldsRequest;
 import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.Offer;
@@ -11,6 +12,7 @@ import com.cloudfuze.onboarding.storage.FileStorageService;
 import com.cloudfuze.onboarding.util.DownloadResponses;
 import com.cloudfuze.onboarding.util.RequestContext;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -53,6 +57,27 @@ public class HrOfferController {
                 RequestContext.clientIp(httpRequest)));
     }
 
+    /** HR places (or replaces) the fields the candidate must complete. */
+    @PutMapping("/offer/fields")
+    public ResponseEntity<OfferDto> saveFields(@PathVariable UUID candidateId,
+                                                        @Valid @RequestBody SaveOfferFieldsRequest request,
+                                                        @AuthenticationPrincipal HrPrincipal hrUser,
+                                                        HttpServletRequest httpRequest) {
+        Candidate candidate = candidateService.requireCandidate(candidateId);
+        return ResponseEntity.ok(offerService.saveFields(candidate, request.fields(), hrUser,
+                RequestContext.clientIp(httpRequest)));
+    }
+
+    /** Releases the drafted offer letter to the candidate. */
+    @PostMapping("/offer/send")
+    public ResponseEntity<OfferDto> sendOffer(@PathVariable UUID candidateId,
+                                              @AuthenticationPrincipal HrPrincipal hrUser,
+                                              HttpServletRequest httpRequest) {
+        Candidate candidate = candidateService.requireCandidate(candidateId);
+        return ResponseEntity.ok(offerService.send(candidate, hrUser,
+                RequestContext.clientIp(httpRequest)));
+    }
+
     @GetMapping("/offer")
     public ResponseEntity<OfferDto> offer(@PathVariable UUID candidateId) {
         candidateService.requireCandidate(candidateId);
@@ -66,7 +91,9 @@ public class HrOfferController {
         Offer offer = offerService.find(candidateId)
                 .orElseThrow(() -> new BusinessRuleException("OFFER_NOT_AVAILABLE",
                         "No offer letter has been uploaded for this candidate yet."));
-        return DownloadResponses.inline(storageService.load(offer.getStorageKey()),
-                offer.getOriginalFilename(), offer.getContentType());
+        // Once signed, HR should see the same document the candidate signed.
+        String key = offer.getSignedStorageKey() != null ? offer.getSignedStorageKey() : offer.getStorageKey();
+        return DownloadResponses.inline(storageService.load(key), offer.getOriginalFilename(),
+                offer.getContentType());
     }
 }

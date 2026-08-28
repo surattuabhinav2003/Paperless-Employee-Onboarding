@@ -1,5 +1,6 @@
 package com.cloudfuze.onboarding.security;
 
+import com.cloudfuze.onboarding.model.HrRole;
 import com.cloudfuze.onboarding.model.HrUser;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,6 +14,8 @@ import java.util.UUID;
 public class HrPrincipal implements UserDetails {
 
     public static final String ROLE = "ROLE_HR";
+    /** Granted on top of ROLE_HR, so admin endpoints can require it alone. */
+    public static final String ADMIN_ROLE = "ROLE_HR_ADMIN";
 
     private final UUID id;
     private final String email;
@@ -20,6 +23,7 @@ public class HrPrincipal implements UserDetails {
     private final String jobTitle;
     private final String passwordHash;
     private final boolean active;
+    private final HrRole role;
 
     public HrPrincipal(HrUser user) {
         this.id = user.getId();
@@ -28,6 +32,7 @@ public class HrPrincipal implements UserDetails {
         this.jobTitle = user.getJobTitle();
         this.passwordHash = user.getPasswordHash();
         this.active = user.isActive();
+        this.role = user.getRole() == null ? HrRole.HR : user.getRole();
     }
 
     public UUID getId() {
@@ -46,9 +51,19 @@ public class HrPrincipal implements UserDetails {
         return jobTitle;
     }
 
+    public HrRole getRole() {
+        return role;
+    }
+
+    public boolean isAdmin() {
+        return role.isAdmin();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(ROLE));
+        return role.isAdmin()
+                ? List.of(new SimpleGrantedAuthority(ROLE), new SimpleGrantedAuthority(ADMIN_ROLE))
+                : List.of(new SimpleGrantedAuthority(ROLE));
     }
 
     @Override

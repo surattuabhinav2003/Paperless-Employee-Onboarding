@@ -1,11 +1,11 @@
 package com.cloudfuze.onboarding.controller;
 
-import com.cloudfuze.onboarding.dto.AcceptOfferRequest;
 import com.cloudfuze.onboarding.dto.CandidateProfileDto;
 import com.cloudfuze.onboarding.dto.CandidateProfileRequest;
 import com.cloudfuze.onboarding.dto.PortalDocumentsDto;
 import com.cloudfuze.onboarding.dto.PortalOfferDto;
 import com.cloudfuze.onboarding.dto.PortalOverviewDto;
+import com.cloudfuze.onboarding.dto.SignOfferRequest;
 import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentType;
@@ -93,7 +93,7 @@ public class PortalController {
 
     @PostMapping(path = "/documents/{documentType}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PortalDocumentsDto> upload(@PathVariable String token,
-                                                     @PathVariable DocumentType documentType,
+                                                     @PathVariable String documentType,
                                                      @RequestPart("file") MultipartFile file,
                                                      @RequestParam(name = "course", required = false)
                                                      EducationCourse course,
@@ -121,12 +121,13 @@ public class PortalController {
                 RequestContext.userAgent(request)));
     }
 
-    @PostMapping("/offer/accept")
-    public ResponseEntity<PortalOfferDto> acceptOffer(@PathVariable String token,
-                                                      @Valid @RequestBody AcceptOfferRequest body,
-                                                      HttpServletRequest request) {
-        return ResponseEntity.ok(portalService.acceptOffer(token, body, RequestContext.clientIp(request),
-                RequestContext.userAgent(request)));
+    /** The candidate completes every placed field; the answers are stamped into the PDF. */
+    @PostMapping("/offer/sign")
+    public ResponseEntity<PortalOfferDto> signOffer(@PathVariable String token,
+                                                    @Valid @RequestBody SignOfferRequest body,
+                                                    HttpServletRequest request) {
+        return ResponseEntity.ok(portalService.signOffer(token, body.fieldValues(),
+                RequestContext.clientIp(request), RequestContext.userAgent(request)));
     }
 
     @GetMapping("/offer/file")
@@ -134,7 +135,9 @@ public class PortalController {
         Candidate candidate = portalService.authenticate(token);
         Offer offer = offerService.requireOfferForCandidateDownload(candidate,
                 RequestContext.clientIp(request));
-        return DownloadResponses.inline(storageService.load(offer.getStorageKey()),
-                offer.getOriginalFilename(), offer.getContentType());
+        // Once signed, this is the document that carries the candidate's signature.
+        String key = offer.getSignedStorageKey() != null ? offer.getSignedStorageKey() : offer.getStorageKey();
+        return DownloadResponses.inline(storageService.load(key), offer.getOriginalFilename(),
+                offer.getContentType());
     }
 }

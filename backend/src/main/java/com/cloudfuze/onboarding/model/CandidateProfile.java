@@ -1,6 +1,9 @@
 package com.cloudfuze.onboarding.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -20,6 +23,8 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -48,38 +53,82 @@ public class CandidateProfile {
 
     // ---- personal ----
 
-    @Column(name = "full_name_as_per_aadhaar", nullable = false, length = 160)
+    @Column(name = "full_name_as_per_aadhaar", length = 160)
     private String fullNameAsPerAadhaar;
 
-    @Column(name = "personal_email", nullable = false, length = 180)
+    @Column(name = "personal_email", length = 180)
     private String personalEmail;
 
-    @Column(name = "contact_number", nullable = false, length = 25)
+    @Column(name = "contact_number", length = 25)
     private String contactNumber;
 
     @Column(name = "alternate_contact_number", length = 25)
     private String alternateContactNumber;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false, length = 30,
+    @Column(name = "gender", length = 30,
             columnDefinition = "varchar(30)")
     private Gender gender;
 
-    @Column(name = "fathers_name", nullable = false, length = 160)
+    @Column(name = "fathers_name", length = 160)
     private String fathersName;
 
-    @Column(name = "permanent_address", nullable = false, length = 600)
+    @Column(name = "permanent_address", length = 600)
     private String permanentAddress;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "blood_group", nullable = false, length = 20,
+    @Column(name = "blood_group", length = 20,
             columnDefinition = "varchar(20)")
     private BloodGroup bloodGroup;
 
+    // ---- identity numbers ----
+
+    /*
+     * Added after this table already had rows (Abhinav's own test candidate
+     * among them), so these stay nullable at the database level even though the
+     * request DTO requires them for every new save - ddl-auto=update cannot add
+     * a NOT NULL column to a populated table. A profile saved before this
+     * feature existed just shows "Not provided" until the candidate edits it
+     * again.
+     */
+    @Column(name = "aadhaar_number", length = 20)
+    private String aadhaarNumber;
+
+    @Column(name = "pan_number", length = 10)
+    private String panNumber;
+
+    // ---- emergency contact ----
+
+    @Column(name = "emergency_contact_name", length = 160)
+    private String emergencyContactName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "emergency_contact_relation", length = 30, columnDefinition = "varchar(30)")
+    private EmergencyContactRelation emergencyContactRelation;
+
+    @Column(name = "emergency_contact_number", length = 25)
+    private String emergencyContactNumber;
+
     // ---- bookkeeping ----
+
+    /**
+     * Answers to the fields an admin created, keyed by the field's code.
+     *
+     * <p>Built-in details are columns above; these cannot be, because the fields
+     * they belong to are invented at runtime. Eagerly fetched because every
+     * caller that reads a profile renders it whole - the candidate's form, HR's
+     * detail panel, the review dialog.
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "candidate_profile_custom_values",
+            joinColumns = @JoinColumn(name = "profile_id"),
+            indexes = @Index(name = "idx_profile_custom_values", columnList = "profile_id"))
+    @MapKeyColumn(name = "field_code", length = 60)
+    @Column(name = "field_value", length = 2000)
+    private Map<String, String> customValues = new LinkedHashMap<>();
 
     @Column(name = "submitted_at", nullable = false)
     private Instant submittedAt = Instant.now();

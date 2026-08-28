@@ -2,29 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
-import { Field, Select, TextArea, TextInput } from '../../components/ui/Field'
-import { DateField } from '../../components/ui/DateField'
+import { ProfileFormFields } from '../../components/profile/ProfileFormFields'
 import { LoadingState } from '../../components/ui/Spinner'
 import { useToast } from '../../context/ToastContext'
 import { useAsync } from '../../hooks/useAsync'
 import { hrService } from '../../services/hrService'
 import { portalService } from '../../services/portalService'
 import { formatDateTime } from '../../utils/format'
-
-const EMPTY = {
-  fullNameAsPerAadhaar: '',
-  personalEmail: '',
-  contactNumber: '',
-  alternateContactNumber: '',
-  dateOfBirth: '',
-  gender: '',
-  fathersName: '',
-  permanentAddress: '',
-  bloodGroup: '',
-}
+import { applyProfileChange, EMPTY_PROFILE, toProfilePayload, validateProfile } from '../../utils/profileForm'
 
 /**
- * The personal details CloudFuze collects alongside the documents. Education is
+ * The personal details Neutara collects alongside the documents. Education is
  * captured per certificate on the documents step instead, where the candidate
  * picks the course each certificate belongs to.
  * <p>
@@ -36,7 +24,7 @@ export function PortalDetailsPage() {
   const toast = useToast()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState(EMPTY)
+  const [form, setForm] = useState(EMPTY_PROFILE)
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
 
@@ -49,42 +37,27 @@ export function PortalDetailsPage() {
   useEffect(() => {
     if (existing.data) {
       setForm({
-        ...EMPTY,
+        ...EMPTY_PROFILE,
         ...existing.data,
         alternateContactNumber: existing.data.alternateContactNumber || '',
+        customFields: existing.data.customFields || {},
       })
     } else if (!existing.loading) {
       setForm((current) => ({ ...current, fullNameAsPerAadhaar: overview.candidateName || '' }))
     }
   }, [existing.data, existing.loading, overview.candidateName])
 
-  const set = (field) => (event) => setValue(field, event.target.value)
-
-  /* Shared by the text inputs and the date picker, so both clear their own
-     validation error as soon as the value changes. */
+  /* Clears a field's validation error as soon as its value changes. */
   const setValue = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }))
+    setForm((current) => applyProfileChange(current, field, value))
     setErrors((current) => ({ ...current, [field]: undefined }))
   }
 
   const validate = () => {
-    const next = {}
-    if (!form.fullNameAsPerAadhaar.trim()) next.fullNameAsPerAadhaar = 'Full name as per Aadhaar is required'
-    if (!form.personalEmail.trim()) next.personalEmail = 'Personal email is required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.personalEmail.trim()))
-      next.personalEmail = 'Enter a valid email address'
-    if (!form.contactNumber.trim()) next.contactNumber = 'Contact number is required'
-    else if (!/^\+?[0-9][0-9\s-]{7,19}$/.test(form.contactNumber.trim()))
-      next.contactNumber = 'Enter a valid contact number'
-    if (!form.alternateContactNumber.trim()) next.alternateContactNumber = 'Alternate contact number is required'
-    else if (!/^\+?[0-9][0-9\s-]{7,19}$/.test(form.alternateContactNumber.trim()))
-      next.alternateContactNumber = 'Enter a valid number'
-    if (!form.dateOfBirth) next.dateOfBirth = 'Date of birth is required'
-    else if (new Date(form.dateOfBirth) >= new Date()) next.dateOfBirth = 'Date of birth must be in the past'
-    if (!form.gender) next.gender = 'Select your gender'
-    if (!form.fathersName.trim()) next.fathersName = "Father's name is required"
-    if (form.permanentAddress.trim().length < 10) next.permanentAddress = 'Give your full permanent address'
-    if (!form.bloodGroup) next.bloodGroup = 'Select your blood group'
+    const next = validateProfile(form, {
+      candidateFields: meta.data?.candidateFields,
+      customFields: meta.data?.customCandidateFields,
+    })
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -94,10 +67,7 @@ export function PortalDetailsPage() {
     if (!validate()) return
     setSaving(true)
     try {
-      const saved = await portalService.saveProfile(token, {
-        ...form,
-        alternateContactNumber: form.alternateContactNumber.trim(),
-      })
+      const saved = await portalService.saveProfile(token, toProfilePayload(form))
       existing.setData(saved)
       await reloadOverview()
       toast.success(
@@ -129,7 +99,7 @@ export function PortalDetailsPage() {
       <section className="cf-card p-5 sm:p-6">
         <h2 className="text-[16px] font-semibold text-ink">Your details</h2>
         <p className="mt-1 max-w-2xl text-[13px] leading-6 text-ink-muted">
-          CloudFuze needs these for your employee record and payroll. Enter your name exactly as it appears
+          Neutara needs these for your employee record and payroll. Enter your name exactly as it appears
           on your Aadhaar card. Your education certificates are uploaded on the documents step.
         </p>
         {existing.data && (
@@ -142,75 +112,16 @@ export function PortalDetailsPage() {
         )}
       </section>
 
-      <section className="cf-card p-5 sm:p-6">
-        <h3 className="text-[14.5px] font-semibold text-ink">Personal information</h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Full name (as per Aadhaar)" htmlFor="fullNameAsPerAadhaar" required
-            error={errors.fullNameAsPerAadhaar} className="sm:col-span-2">
-            <TextInput id="fullNameAsPerAadhaar" value={form.fullNameAsPerAadhaar} disabled={locked}
-              error={errors.fullNameAsPerAadhaar} onChange={set('fullNameAsPerAadhaar')} autoComplete="name" />
-          </Field>
-
-          <Field label="Personal email ID" htmlFor="personalEmail" required error={errors.personalEmail}
-            hint="Your own email - separate from your CloudFuze address.">
-            <TextInput id="personalEmail" type="email" value={form.personalEmail} disabled={locked}
-              error={errors.personalEmail} onChange={set('personalEmail')} autoComplete="email" />
-          </Field>
-          <Field label="Contact number" htmlFor="contactNumber" required error={errors.contactNumber}>
-            <TextInput id="contactNumber" type="tel" value={form.contactNumber} disabled={locked}
-              error={errors.contactNumber} onChange={set('contactNumber')} placeholder="9876543210"
-              autoComplete="tel" />
-          </Field>
-          <Field label="Alternate contact number" htmlFor="alternateContactNumber" required
-            error={errors.alternateContactNumber} hint="A second number we can reach you on.">
-            <TextInput id="alternateContactNumber" type="tel" value={form.alternateContactNumber}
-              disabled={locked} error={errors.alternateContactNumber}
-              onChange={set('alternateContactNumber')} />
-          </Field>
-          <Field label="Date of birth" htmlFor="dateOfBirth" required error={errors.dateOfBirth}>
-            {/* Our own calendar: the native one is browser chrome and cannot
-                be styled to match the app. */}
-            <DateField
-              id="dateOfBirth"
-              value={form.dateOfBirth}
-              disabled={locked}
-              error={Boolean(errors.dateOfBirth)}
-              onChange={(iso) => setValue('dateOfBirth', iso)}
-              max="2015-12-31"
-              yearsBack={70}
-              placeholder="Choose your date of birth"
-            />
-          </Field>
-          <Field label="Gender" htmlFor="gender" required error={errors.gender}>
-            <Select id="gender" value={form.gender} disabled={locked} error={errors.gender}
-              onChange={set('gender')}>
-              <option value="">Select</option>
-              {(meta.data?.genders || []).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Blood group" htmlFor="bloodGroup" required error={errors.bloodGroup}>
-            <Select id="bloodGroup" value={form.bloodGroup} disabled={locked} error={errors.bloodGroup}
-              onChange={set('bloodGroup')}>
-              <option value="">Select</option>
-              {(meta.data?.bloodGroups || []).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Father's name" htmlFor="fathersName" required error={errors.fathersName}>
-            <TextInput id="fathersName" value={form.fathersName} disabled={locked}
-              error={errors.fathersName} onChange={set('fathersName')} />
-          </Field>
-          <Field label="Permanent address" htmlFor="permanentAddress" required
-            error={errors.permanentAddress} className="sm:col-span-2"
-            hint="House number, street, city, state and PIN code.">
-            <TextArea id="permanentAddress" rows={3} value={form.permanentAddress} disabled={locked}
-              error={errors.permanentAddress} onChange={set('permanentAddress')} />
-          </Field>
-        </div>
-      </section>
+      <ProfileFormFields
+        form={form}
+        errors={errors}
+        meta={meta.data}
+        disabled={locked}
+        setValue={setValue}
+        candidateFields={meta.data?.candidateFields}
+        customFields={meta.data?.customCandidateFields}
+        sectioned
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         {!locked && (

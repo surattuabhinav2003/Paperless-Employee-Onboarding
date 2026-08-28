@@ -8,7 +8,9 @@ import com.cloudfuze.onboarding.model.Candidate;
 import com.cloudfuze.onboarding.model.CandidateProfile;
 import com.cloudfuze.onboarding.model.Stage;
 import com.cloudfuze.onboarding.repository.CandidateProfileRepository;
+import com.cloudfuze.onboarding.security.HrPrincipal;
 import com.cloudfuze.onboarding.exception.BusinessRuleException;
+import com.cloudfuze.onboarding.exception.FieldValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,14 +33,17 @@ public class CandidateProfileService {
     private static final Logger log = LoggerFactory.getLogger(CandidateProfileService.class);
 
     private final CandidateProfileRepository profileRepository;
-    private final DocumentApprovalService approvalService;
     private final AuditService auditService;
+    private final CandidateFieldService fieldService;
+    private final CustomCandidateFieldService customFieldService;
 
-    public CandidateProfileService(CandidateProfileRepository profileRepository,
-                                  DocumentApprovalService approvalService, AuditService auditService) {
+    public CandidateProfileService(CandidateProfileRepository profileRepository, AuditService auditService,
+                                  CandidateFieldService fieldService,
+                                  CustomCandidateFieldService customFieldService) {
         this.profileRepository = profileRepository;
-        this.approvalService = approvalService;
         this.auditService = auditService;
+        this.fieldService = fieldService;
+        this.customFieldService = customFieldService;
     }
 
     @Transactional(readOnly = true)
@@ -54,6 +59,39 @@ public class CandidateProfileService {
     @Transactional(readOnly = true)
     public boolean isComplete(UUID candidateId) {
         return profileRepository.existsByCandidateId(candidateId);
+    }
+
+    /**
+     * HR correcting the candidate's details on their behalf.
+     *
+     * <p>None of the candidate-facing locks apply: the whole reason those locks
+     * tell the candidate to "contact HR" is that HR is the one who can still fix
+     * a typo afterwards. Recorded against the HR user, not the candidate, so the
+     * audit trail never implies the candidate changed their own details.
+     */
+    @Transactional
+    public CandidateProfileDto saveAsHr(Candidate candidate, CandidateProfileRequest request,
+                                        HrPrincipal hrUser, String ipAddress) {
+        CandidateProfile profile = profileRepository.findByCandidateId(candidate.getId()).orElse(null);
+        boolean isNew = profile == null;
+        if (isNew) {
+            profile = new CandidateProfile(candidate);
+            profile.setSubmittedAt(Instant.now());
+        } else {
+            profile.setRevision(profile.getRevision() + 1);
+        }
+
+        validateAll(request);
+        apply(profile, request, ipAddress);
+        profileRepository.save(profile);
+
+        auditService.recordHrEvent(candidate.getId(), AuditEventType.PROFILE_CORRECTED, hrUser.getEmail(),
+                ipAddress, null, Map.of("revision", profile.getRevision(), "createdByHr", isNew));
+
+        log.info("HR {} {} the details for {} (revision {})", hrUser.getEmail(),
+                isNew ? "entered" : "corrected", candidate.getEmail(), profile.getRevision());
+
+        return CandidateProfileDto.from(profile);
     }
 
     /** Creates or updates the candidate's details. */
@@ -79,24 +117,20 @@ public class CandidateProfileService {
             profile.setRevision(profile.getRevision() + 1);
         }
 
-        profile.setFullNameAsPerAadhaar(request.fullNameAsPerAadhaar().trim());
-        profile.setPersonalEmail(request.personalEmail().trim().toLowerCase());
-        profile.setContactNumber(request.contactNumber().trim());
-        profile.setAlternateContactNumber(blankToNull(request.alternateContactNumber()));
-        profile.setDateOfBirth(request.dateOfBirth());
-        profile.setGender(request.gender());
-        profile.setFathersName(request.fathersName().trim());
-        profile.setPermanentAddress(request.permanentAddress().trim());
-        profile.setBloodGroup(request.bloodGroup());
-        profile.setSubmittedFromIp(ipAddress);
+        validateAll(request);
+        apply(profile, request, ipAddress);
         if (isNew) {
             profile.setSubmittedAt(Instant.now());
         }
         profileRepository.save(profile);
 
         Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("gender", profile.getGender().getCode());
-        metadata.put("bloodGroup", profile.getBloodGroup().getCode());
+        if (profile.getGender() != null) {
+            metadata.put("gender", profile.getGender().getCode());
+        }
+        if (profile.getBloodGroup() != null) {
+            metadata.put("bloodGroup", profile.getBloodGroup().getCode());
+        }
         metadata.put("revision", profile.getRevision());
         auditService.recordCandidateEvent(candidate.getId(),
                 isNew ? AuditEventType.PROFILE_SUBMITTED : AuditEventType.PROFILE_UPDATED,
@@ -105,12 +139,62 @@ public class CandidateProfileService {
         log.info("Candidate {} {} their details (revision {})", candidate.getEmail(),
                 isNew ? "submitted" : "updated", profile.getRevision());
 
-        // The details may be the last missing piece, so re-check the document gate.
-        approvalService.evaluate(candidate);
         return CandidateProfileDto.from(profile);
     }
 
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    /**
+     * Copies a validated request onto the profile. Shared by the candidate's own
+     * submission and HR's correction so the two can never normalise a value
+     * differently - an Aadhaar number saved by HR is stored exactly as one saved
+     * by the candidate.
+     */
+    private void apply(CandidateProfile profile, CandidateProfileRequest request, String ipAddress) {
+        profile.setFullNameAsPerAadhaar(trimmed(request.fullNameAsPerAadhaar()));
+        profile.setPersonalEmail(lowered(request.personalEmail()));
+        profile.setContactNumber(trimmed(request.contactNumber()));
+        profile.setAlternateContactNumber(trimmed(request.alternateContactNumber()));
+        profile.setDateOfBirth(request.dateOfBirth());
+        profile.setGender(request.gender());
+        profile.setFathersName(trimmed(request.fathersName()));
+        profile.setPermanentAddress(trimmed(request.permanentAddress()));
+        profile.setBloodGroup(request.bloodGroup());
+        profile.setAadhaarNumber(request.aadhaarNumber() == null ? null
+                : request.aadhaarNumber().replaceAll("\s", ""));
+        profile.setPanNumber(request.panNumber() == null ? null
+                : request.panNumber().trim().toUpperCase());
+        profile.setEmergencyContactName(trimmed(request.emergencyContactName()));
+        profile.setEmergencyContactRelation(request.emergencyContactRelation());
+        profile.setEmergencyContactNumber(trimmed(request.emergencyContactNumber()));
+        profile.setSubmittedFromIp(ipAddress);
+
+        // Answers to fields that are no longer asked are left as they are
+        // rather than cleared, so switching a field back on does not look like
+        // the candidate never answered it.
+        profile.getCustomValues().putAll(customFieldService.sanitise(request.customFields()));
+    }
+
+    /**
+     * Both kinds of field, judged together.
+     *
+     * <p>Bean Validation has already run by the time a request reaches the
+     * service; this repeats the runtime part so a caller that assembles a
+     * request itself cannot bypass it.
+     */
+    private void validateAll(CandidateProfileRequest request) {
+        Map<String, String> errors = new LinkedHashMap<>(fieldService.missingRequired(request));
+        errors.putAll(customFieldService.validate(request.customFields()));
+        if (!errors.isEmpty()) {
+            throw new FieldValidationException("Request validation failed.", errors);
+        }
+    }
+
+    /* An optional field left blank arrives as null, so trimming has to survive
+       it - these ran unguarded when every field was mandatory. */
+    private static String trimmed(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private static String lowered(String value) {
+        return value == null ? null : value.trim().toLowerCase();
     }
 }

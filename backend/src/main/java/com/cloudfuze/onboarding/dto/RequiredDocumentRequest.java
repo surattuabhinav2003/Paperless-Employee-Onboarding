@@ -1,12 +1,13 @@
 package com.cloudfuze.onboarding.dto;
 
-import com.cloudfuze.onboarding.model.DocumentType;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record RequiredDocumentRequest(
-        @NotNull(message = "Document type is required")
-        DocumentType type,
+        /* A code rather than the enum: it may name a type an admin created.
+           Checked against the catalogue, which knows about both kinds. */
+        @NotBlank(message = "Document type is required")
+        String type,
 
         boolean mandatory,
 

@@ -1,6 +1,9 @@
 package com.cloudfuze.onboarding.config;
 
 import com.cloudfuze.onboarding.model.DocumentStatus;
+import com.cloudfuze.onboarding.model.CandidateField;
+import com.cloudfuze.onboarding.model.HrRole;
+import com.cloudfuze.onboarding.model.NocStatus;
 import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.EducationCourse;
 import com.cloudfuze.onboarding.model.Stage;
@@ -25,5 +28,11 @@ public class WebConfig implements WebMvcConfigurer {
                 source -> source == null || source.isBlank() ? null : EducationCourse.fromCode(source));
         registry.addConverter(String.class, DocumentStatus.class,
                 source -> source == null || source.isBlank() ? null : DocumentStatus.fromCode(source));
+        registry.addConverter(String.class, CandidateField.class,
+                source -> source == null || source.isBlank() ? null : CandidateField.fromCode(source));
+        registry.addConverter(String.class, HrRole.class,
+                source -> source == null || source.isBlank() ? null : HrRole.fromCode(source));
+        registry.addConverter(String.class, NocStatus.class,
+                source -> source == null || source.isBlank() ? null : NocStatus.fromCode(source));
     }
 }

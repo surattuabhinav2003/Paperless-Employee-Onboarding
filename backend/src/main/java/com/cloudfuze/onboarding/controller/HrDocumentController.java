@@ -50,6 +50,14 @@ public class HrDocumentController {
         return ResponseEntity.ok(documentService.hrDocumentViewFor(candidateId));
     }
 
+    @PostMapping("/{documentId}/reopen")
+    public ResponseEntity<List<DocumentDto>> reopen(@PathVariable UUID documentId,
+                                                    @AuthenticationPrincipal HrPrincipal hrUser,
+                                                    HttpServletRequest httpRequest) {
+        UUID candidateId = documentService.reopen(documentId, hrUser, RequestContext.clientIp(httpRequest));
+        return ResponseEntity.ok(documentService.hrDocumentViewFor(candidateId));
+    }
+
     @PostMapping("/{documentId}/reject")
     public ResponseEntity<List<DocumentDto>> reject(@PathVariable UUID documentId,
                                                     @Valid @RequestBody RejectDocumentRequest request,
@@ -68,7 +76,7 @@ public class HrDocumentController {
         Resource resource = storageService.load(document.getStorageKey());
         auditService.recordHrEvent(document.getCandidate().getId(), AuditEventType.DOCUMENT_DOWNLOADED,
                 hrUser.getEmail(), RequestContext.clientIp(httpRequest),
-                document.getDocumentType().getCode(),
+                document.typeCode(),
                 Map.of("filename", document.getOriginalFilename(), "version", document.getVersion()));
         return DownloadResponses.inline(resource, document.getOriginalFilename(), document.getContentType());
     }

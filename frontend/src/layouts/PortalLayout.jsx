@@ -6,6 +6,7 @@ import { LoadingState } from '../components/ui/Spinner'
 import { StatusPill } from '../components/ui/StatusPill'
 import { useAsync } from '../hooks/useAsync'
 import { portalService } from '../services/portalService'
+import { PortalVerifyPage } from '../pages/portal/PortalVerifyPage'
 import { formatDate } from '../utils/format'
 import { stageMeta } from '../utils/status'
 
@@ -45,6 +46,14 @@ export function PortalLayout() {
     )
   }
 
+  /*
+   * The link is fine - this browser just has not proved it belongs to the
+   * candidate yet. Shown before the error branch, because it is not an error.
+   */
+  if (error && !overview && error.code === 'VERIFICATION_REQUIRED') {
+    return <PortalVerifyPage token={token} onVerified={reload} />
+  }
+
   if (error && !overview) {
     const expired = error.code === 'PORTAL_TOKEN_EXPIRED'
     return (
@@ -56,7 +65,7 @@ export function PortalLayout() {
               title={expired ? 'This onboarding link has expired' : 'This onboarding link is not valid'}
               message={
                 error.message ||
-                'Please use the link from your CloudFuze invitation email, or contact your HR contact for a fresh link.'
+                'Please use the link from your Neutara invitation email, or contact your HR contact for a fresh link.'
               }
             />
           </div>
@@ -69,8 +78,14 @@ export function PortalLayout() {
   const page = pageFrom(location.pathname)
   const allowedPages = STEP_PAGES[overview.currentStep] || []
 
+  // Until HR uploads the offer letter, the candidate may still look back at the
+  // documents they already submitted - read-only, since uploads are closed by
+  // this stage. Once the letter is up, the focus is the offer and this is gone.
+  const canReviewDocs = page === 'documents' && overview.currentStep === 'offer'
+    && !overview.offerUploaded
+
   // A stale or not-yet-reachable page redirects to the step they are on.
-  if (page && !allowedPages.includes(page)) {
+  if (page && !allowedPages.includes(page) && !canReviewDocs) {
     return <Navigate to={`/portal/${token}`} replace />
   }
 
@@ -122,7 +137,7 @@ export function PortalLayout() {
             </a>
           </p>
           <p className="text-[11px]">
-            This link is personal to you. CloudFuze will never ask for your password or payment details.
+            This link is personal to you. Neutara will never ask for your password or payment details.
           </p>
         </footer>
       </div>

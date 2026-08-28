@@ -2,11 +2,13 @@ package com.cloudfuze.onboarding.dto;
 
 import com.cloudfuze.onboarding.model.BloodGroup;
 import com.cloudfuze.onboarding.model.CandidateProfile;
+import com.cloudfuze.onboarding.model.EmergencyContactRelation;
 import com.cloudfuze.onboarding.model.Gender;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
@@ -23,9 +25,17 @@ public record CandidateProfileDto(
         String permanentAddress,
         BloodGroup bloodGroup,
         String bloodGroupLabel,
+        String aadhaarNumber,
+        String panNumber,
+        String emergencyContactName,
+        EmergencyContactRelation emergencyContactRelation,
+        String emergencyContactRelationLabel,
+        String emergencyContactNumber,
         Instant submittedAt,
         Instant updatedAt,
-        int revision
+        int revision,
+        /** Answers to admin-created fields, keyed by field code. */
+        Map<String, String> customFields
 ) {
     public static CandidateProfileDto from(CandidateProfile profile) {
         if (profile == null) {
@@ -39,13 +49,20 @@ public record CandidateProfileDto(
                 profile.getAlternateContactNumber(),
                 profile.getDateOfBirth(),
                 profile.getGender(),
-                profile.getGender().getLabel(),
+                profile.getGender() == null ? null : profile.getGender().getLabel(),
                 profile.getFathersName(),
                 profile.getPermanentAddress(),
                 profile.getBloodGroup(),
-                profile.getBloodGroup().getLabel(),
+                profile.getBloodGroup() == null ? null : profile.getBloodGroup().getLabel(),
+                profile.getAadhaarNumber(),
+                profile.getPanNumber(),
+                profile.getEmergencyContactName(),
+                profile.getEmergencyContactRelation(),
+                profile.getEmergencyContactRelation() == null ? null : profile.getEmergencyContactRelation().getLabel(),
+                profile.getEmergencyContactNumber(),
                 profile.getSubmittedAt(),
                 profile.getUpdatedAt(),
-                profile.getRevision());
+                profile.getRevision(),
+                profile.getCustomValues() == null ? Map.of() : Map.copyOf(profile.getCustomValues()));
     }
 }

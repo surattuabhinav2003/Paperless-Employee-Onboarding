@@ -92,6 +92,21 @@ public class CandidateDocument {
     @Column(name = "reject_reason", length = 600)
     private String rejectReason;
 
+    /** Set only for a type an administrator created; see RequiredDocument. */
+    @jakarta.persistence.Column(name = "custom_type_code", length = 60)
+    private String customTypeCode;
+
+    /** What was uploaded, whichever kind of type it is. */
+    public String typeCode() {
+        return customTypeCode != null && !customTypeCode.isBlank()
+                ? customTypeCode : documentType.getCode();
+    }
+
+    public CandidateDocument(Candidate candidate, String customTypeCode) {
+        this(candidate, DocumentType.OTHER);
+        this.customTypeCode = customTypeCode;
+    }
+
     public CandidateDocument(Candidate candidate, DocumentType documentType) {
         this.candidate = candidate;
         this.documentType = documentType;

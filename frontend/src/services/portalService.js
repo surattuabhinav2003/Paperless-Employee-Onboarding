@@ -5,6 +5,21 @@ import { apiClient } from './apiClient'
  * backend re-checks it, its expiry and the candidate stage on every call.
  */
 export const portalService = {
+  /**
+   * Confirms the candidate's own email and asks for a code. The backend only
+   * sends one if the email matches the person this link belongs to.
+   */
+  async requestCode(token, email) {
+    const { data } = await apiClient.post(`/portal/${token}/verify/request`, { email })
+    return data
+  },
+
+  /** Exchanges a correct code for a device marker. */
+  async verifyCode(token, code) {
+    const { data } = await apiClient.post(`/portal/${token}/verify`, { code })
+    return data
+  },
+
   async overview(token) {
     const { data } = await apiClient.get(`/portal/${token}`)
     return data
@@ -56,12 +71,27 @@ export const portalService = {
     return data
   },
 
-  async acceptOffer(token, acknowledgementName) {
-    const { data } = await apiClient.post(`/portal/${token}/offer/accept`, {
-      acknowledgementName,
-      accepted: true,
-    })
+  /** The candidate's answers for every placed field, stamped into the PDF. */
+  async signOffer(token, fieldValues) {
+    const { data } = await apiClient.post(`/portal/${token}/offer/sign`, { fieldValues })
     return data
+  },
+
+  /**
+   * Saves the offer letter to disk. Goes through apiClient rather than a plain
+   * link so the request carries the portal device header the backend requires.
+   */
+  async downloadOffer(apiPath, filename) {
+    const path = apiPath.startsWith('/api') ? apiPath.slice(4) : apiPath
+    const { data } = await apiClient.get(path, { responseType: 'blob' })
+    const url = URL.createObjectURL(data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename || 'offer-letter.pdf'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
   },
 
 }

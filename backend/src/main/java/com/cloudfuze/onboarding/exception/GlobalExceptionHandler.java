@@ -63,6 +63,13 @@ public class GlobalExceptionHandler {
                 "Request validation failed.", request.getRequestURI(), fieldErrors));
     }
 
+    @ExceptionHandler(FieldValidationException.class)
+    public ResponseEntity<ErrorResponse> handleFieldValidation(FieldValidationException ex,
+                                                               HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(ErrorResponse.validation(400, ex.getMessage(),
+                request.getRequestURI(), ex.getFieldErrors()));
+    }
+
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class,
             MissingServletRequestPartException.class, HttpMessageNotReadableException.class,
             IllegalArgumentException.class})

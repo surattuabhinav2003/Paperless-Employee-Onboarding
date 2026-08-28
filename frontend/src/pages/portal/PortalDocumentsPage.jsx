@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Field, Select } from '../../components/ui/Field'
 import { DocumentViewer } from '../../components/ui/DocumentViewer'
 import { FileDropzone } from '../../components/ui/FileDropzone'
+import { PhotoCropper } from '../../components/ui/PhotoCropper'
 import { ProgressBar } from '../../components/ui/ProgressBar'
 import { LoadingState } from '../../components/ui/Spinner'
 import { ErrorState } from '../../components/ui/EmptyState'
@@ -14,9 +15,13 @@ import { portalService } from '../../services/portalService'
 import { formatBytes, formatDateTime } from '../../utils/format'
 export function PortalDocumentsPage() {
   const { token, reloadOverview, overview } = useOutletContext()
+  const navigate = useNavigate()
   const toast = useToast()
   const [uploadingType, setUploadingType] = useState(null)
   const [viewing, setViewing] = useState(null)
+  // True once they have replaced a document HR sent back, so the page knows to
+  // show the submit action rather than a plain "back to home".
+  const [reuploaded, setReuploaded] = useState(false)
 
   const { data, error, loading, setData, reload } = useAsync(
     () => portalService.documents(token),
@@ -28,7 +33,17 @@ export function PortalDocumentsPage() {
     try {
       const updated = await portalService.uploadDocument(token, documentType, file, course)
       setData(updated)
-      reloadOverview()
+      await reloadOverview()
+
+      // Replacing a document HR sent back: remember it, so the page can offer an
+      // explicit "Submit to HR" instead of silently whisking them away. The
+      // candidate decides when they are finished re-uploading.
+      if (overview.submittedForReview) {
+        setReuploaded(true)
+        toast.success('New copy uploaded', 'Submit to HR when you have replaced everything they asked for.')
+        return
+      }
+
       toast.success('Document uploaded', 'HR will review it and you will see the status here.')
     } catch (err) {
       toast.apiError(err, 'Upload failed')
@@ -49,6 +64,7 @@ export function PortalDocumentsPage() {
 
   const { documents, progress, uploadAllowed, message, maxFileSizeBytes, allowedExtensions } = data
   const outstanding = overview.outstandingItems || []
+  const rejectedRemaining = documents.filter((d) => d.status === 'rejected').length
 
   return (
     <div className="space-y-5">
@@ -90,35 +106,79 @@ export function PortalDocumentsPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2.5 border-t border-surface-line pt-4">
-          {!overview.submittedForReview &&
-            (overview.readyToSubmit ? (
-              <Link to={`/portal/${token}/review`}>
-                <Button>Review &amp; submit</Button>
-              </Link>
+          {overview.submittedForReview ? (
+            // Pack is with HR. If they are replacing a document HR sent back, they
+            // get a real submit action - they decide when they are done - and only
+            // a plain way home otherwise.
+            reuploaded || rejectedRemaining > 0 ? (
+              <>
+                <Button
+                  disabled={rejectedRemaining > 0}
+                  title={rejectedRemaining > 0 ? 'Replace the remaining document first' : undefined}
+                  onClick={() => {
+                    toast.success('Sent back to HR',
+                      'Thanks - your new copy is with HR. We will email you when the next step is ready.')
+                    navigate(`/portal/${token}`, { replace: true })
+                  }}
+                >
+                  Submit to HR
+                </Button>
+                <span className="text-[12px] text-ink-muted">
+                  {rejectedRemaining > 0
+                    ? `${rejectedRemaining} document${rejectedRemaining === 1 ? '' : 's'} still to replace.`
+                    : 'Everything HR asked for has been replaced.'}
+                </span>
+              </>
             ) : (
-              // Nothing to review until every required item is in, so the button
-              // stays inert rather than bouncing them to a page that just says no.
-              <Button disabled title="Finish the items below first">
-                Review &amp; submit
-              </Button>
-            ))}
-          <Link to={`/portal/${token}/details`}>
-            <Button variant="secondary" size="sm"
-              icon={
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5m7-7-7 7 7 7" />
-                </svg>
-              }
-            >
-              Back to my details
-            </Button>
-          </Link>
-          <span className="text-[12px] text-ink-muted">
-            {overview.submittedForReview
-              ? 'Your pack is with HR. You can still view everything here.'
-              : 'Need to correct your name, address or contact number? Go back and edit them.'}
-          </span>
+              <Link to={`/portal/${token}`}>
+                <Button
+                  icon={
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor"
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 12H5m7-7-7 7 7 7" />
+                    </svg>
+                  }
+                >
+                  Back to home
+                </Button>
+              </Link>
+            )
+          ) : (
+            <>
+              {overview.readyToSubmit ? (
+                <Link to={`/portal/${token}/review`}>
+                  <Button>Review &amp; submit</Button>
+                </Link>
+              ) : (
+                // Nothing to review until every required item is in, so the button
+                // stays inert rather than bouncing them to a page that just says no.
+                <Button disabled title="Finish the items below first">
+                  Review &amp; submit
+                </Button>
+              )}
+              <Link to={`/portal/${token}/details`}>
+                <Button variant="secondary" size="sm"
+                  icon={
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor"
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 12H5m7-7-7 7 7 7" />
+                    </svg>
+                  }
+                >
+                  Back to my details
+                </Button>
+              </Link>
+            </>
+          )}
+          {/* The re-upload branch prints its own hint, so this is only for the
+              plain "with HR" and pre-submit states. */}
+          {!(overview.submittedForReview && (reuploaded || rejectedRemaining > 0)) && (
+            <span className="text-[12px] text-ink-muted">
+              {overview.submittedForReview
+                ? 'Your pack is with HR. You can still view everything here.'
+                : 'Need to correct your name, address or contact number? Go back and edit them.'}
+            </span>
+          )}
         </div>
 
         {!overview.submittedForReview && outstanding.length > 0 && (
@@ -163,7 +223,13 @@ export function PortalDocumentsPage() {
               </p>
             )}
             {!nextUp && (
-              <p className="pd-next">All documents are in. Review and submit when you are ready.</p>
+              <p className="pd-next">
+                {!overview.submittedForReview
+                  ? 'All documents are in. Review and submit when you are ready.'
+                  : reuploaded
+                    ? 'New copies uploaded. Submit to HR when you are ready.'
+                    : 'Everything is back with HR. There is nothing more for you to do here.'}
+              </p>
             )}
           </div>
         )
@@ -206,6 +272,10 @@ function DocumentRow({
   onView,
 }) {
   const canUpload = uploadAllowed && doc.uploadAllowed
+  // The passport photo gets an in-browser crop/zoom editor instead of a plain
+  // file pick, so the candidate can frame it to passport shape themselves.
+  const isPhoto = doc.type === 'passport_photo'
+  const [cropFile, setCropFile] = useState(null)
   // Education certificates above Class 10 must say which course they are for.
   const [course, setCourse] = useState(doc.course || '')
   const courseMissing = doc.requiresCourse && !course
@@ -308,16 +378,36 @@ function DocumentRow({
                     showHint={false}
                     disabled={courseMissing}
                     maxBytes={maxBytes}
-                    allowedExtensions={allowedExtensions}
-                    onSelect={(file) => onUpload(file, course || null)}
+                    accept={isPhoto ? '.png,.jpg,.jpeg,.webp' : undefined}
+                    allowedExtensions={isPhoto ? ['png', 'jpg', 'jpeg', 'webp'] : allowedExtensions}
+                    onSelect={(file) => (isPhoto ? setCropFile(file) : onUpload(file, course || null))}
                     label={
                       courseMissing
                         ? 'Choose the course above first'
-                        : doc.status === 'rejected'
-                          ? 'Upload a replacement'
-                          : 'Choose file or drag it here'
+                        : isPhoto
+                          ? doc.status === 'rejected'
+                            ? 'Choose a new photo'
+                            : doc.status === 'submitted'
+                              ? 'Replace this photo'
+                              : 'Choose a photo to crop'
+                          : doc.status === 'rejected'
+                            ? 'Upload a replacement'
+                            : doc.status === 'submitted'
+                              ? 'Replace this document'
+                              : 'Choose file or drag it here'
                     }
                   />
+                  {isPhoto && (
+                    <PhotoCropper
+                      open={Boolean(cropFile)}
+                      file={cropFile}
+                      onCancel={() => setCropFile(null)}
+                      onConfirm={async (cropped) => {
+                        await onUpload(cropped, null)
+                        setCropFile(null)
+                      }}
+                    />
+                  )}
                 </>
               )}
             </div>

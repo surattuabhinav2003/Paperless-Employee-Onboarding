@@ -37,9 +37,10 @@ import java.util.UUID;
  * <p>
  * Rules enforced here: a candidate may only upload documents HR requested, only
  * while the stage is {@code docs_pending}, and only for a slot that is empty or
- * rejected. A rejected document is the only thing that reopens for re-upload,
- * and the stage advances to {@code docs_approved} exactly when every mandatory
- * requirement is verified.
+ * rejected. A rejected document reopens for re-upload by the candidate; HR can
+ * also reopen a verified document for its own re-review. Verifying every
+ * mandatory document only makes a candidate eligible for approval - see
+ * {@link DocumentApprovalService} for the actual, deliberate approval step.
  */
 @Service
 public class DocumentService {
@@ -55,6 +56,8 @@ public class DocumentService {
     private final AuditService auditService;
     private final OnboardingMapper mapper;
 
+    private final DocumentCatalogService catalog;
+
     public DocumentService(CandidateRepository candidateRepository,
                           CandidateDocumentRepository documentRepository,
                           DocumentApprovalService approvalService,
@@ -62,7 +65,8 @@ public class DocumentService {
                           FileUploadValidator uploadValidator,
                           StageGuard stageGuard,
                           AuditService auditService,
-                          OnboardingMapper mapper) {
+                          OnboardingMapper mapper,
+                          DocumentCatalogService catalog) {
         this.candidateRepository = candidateRepository;
         this.documentRepository = documentRepository;
         this.approvalService = approvalService;
@@ -71,6 +75,7 @@ public class DocumentService {
         this.stageGuard = stageGuard;
         this.auditService = auditService;
         this.mapper = mapper;
+        this.catalog = catalog;
     }
 
     @Transactional(readOnly = true)
@@ -91,20 +96,42 @@ public class DocumentService {
         return hrDocumentView(candidate);
     }
 
+    /**
+     * A fresh record for this type. A built-in one is stored under its enum; an
+     * admin-created one under OTHER plus its code, because the enum column is
+     * NOT NULL and has no constant to hold a runtime type.
+     */
+    private CandidateDocument newDocument(Candidate candidate, DocumentCatalogService.Entry type) {
+        return type.custom()
+                ? new CandidateDocument(candidate, type.code())
+                : new CandidateDocument(candidate, type.builtIn());
+    }
+
     /** Candidate upload / re-upload of a single requested document. */
     @Transactional
-    public CandidateDocument upload(Candidate candidate, DocumentType type, EducationCourse course,
+    public CandidateDocument upload(Candidate candidate, String typeCode, EducationCourse course,
                                     MultipartFile file, String ipAddress, String userAgent) {
+        // Matched on the requirement's code, so a type an admin created behaves
+        // exactly like a built-in one here.
         RequiredDocument requirement = candidate.getRequiredDocuments().stream()
-                .filter(rd -> rd.getDocumentType() == type)
+                .filter(rd -> rd.typeCode().equals(typeCode))
                 .findFirst()
                 .orElseThrow(() -> new BusinessRuleException("DOCUMENT_NOT_REQUESTED",
                         "That document was not requested for your onboarding."));
 
+        DocumentCatalogService.Entry type = catalog.resolve(typeCode);
+
         stageGuard.requireDocumentUploadOpen(candidate);
-        // Once submitted, only a document HR sent back may be replaced.
-        boolean replacingRejected = existingStatusIsRejected(candidate, type);
-        if (candidate.isSubmittedForReview() && !replacingRejected) {
+
+        CandidateDocument existing = documentRepository
+                .findByCandidateIdAndTypeCode(candidate.getId(), typeCode)
+                .orElse(null);
+
+        // Once submitted, only a document HR sent back (or one added as a new
+        // requirement after submission, so it was never provided at all) may
+        // still be uploaded.
+        boolean replacingRejected = existing != null && existing.getStatus() == DocumentStatus.REJECTED;
+        if (candidate.isSubmittedForReview() && existing != null && !replacingRejected) {
             throw new BusinessRuleException("ALREADY_SUBMITTED",
                     "Your onboarding pack is already with HR. You can only replace a document they ask "
                             + "you to re-upload.");
@@ -117,26 +144,30 @@ public class DocumentService {
                 throw new FileValidationException("COURSE_REQUIRED",
                         "Select which course this certificate is for before uploading it.");
             }
-            if (!type.accepts(course)) {
+            if (!type.builtIn().accepts(course)) {
                 throw new FileValidationException("COURSE_NOT_ALLOWED",
-                        "That course cannot be used for " + type.getLabel() + ".");
+                        "That course cannot be used for " + type.label() + ".");
             }
         } else if (course != null) {
             throw new FileValidationException("COURSE_NOT_APPLICABLE",
-                    type.getLabel() + " does not take a course selection.");
+                    type.label() + " does not take a course selection.");
         }
-
-        CandidateDocument existing = documentRepository
-                .findByCandidateIdAndDocumentType(candidate.getId(), type)
-                .orElse(null);
 
         boolean isReupload = false;
         if (existing != null) {
             switch (existing.getStatus()) {
                 case VERIFIED -> throw new BusinessRuleException("DOCUMENT_ALREADY_VERIFIED",
                         "This document has already been verified by HR and cannot be replaced.");
-                case SUBMITTED -> throw new BusinessRuleException("DOCUMENT_AWAITING_REVIEW",
-                        "This document is already submitted and waiting for HR review.");
+                case SUBMITTED -> {
+                    // Reaching here means the pack is not yet with HR (the guard above
+                    // blocks that case), so the candidate may still fix a mistake by
+                    // replacing what they uploaded.
+                    if (candidate.isSubmittedForReview()) {
+                        throw new BusinessRuleException("DOCUMENT_AWAITING_REVIEW",
+                                "This document is already submitted and waiting for HR review.");
+                    }
+                    isReupload = true;
+                }
                 case REJECTED -> isReupload = true;
                 default -> {
                     // PENDING is never persisted; nothing to do.
@@ -146,7 +177,7 @@ public class DocumentService {
 
         StoredFile stored = store(candidate.getId(), file);
 
-        CandidateDocument document = existing == null ? new CandidateDocument(candidate, type) : existing;
+        CandidateDocument document = existing == null ? newDocument(candidate, type) : existing;
         String replacedKey = isReupload ? document.getStorageKey() : null;
         document.setStorageKey(stored.key());
         document.setOriginalFilename(stored.originalFilename());
@@ -169,7 +200,7 @@ public class DocumentService {
         }
 
         Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("documentType", type.getCode());
+        metadata.put("documentType", type.code());
         metadata.put("filename", stored.originalFilename());
         metadata.put("sizeBytes", stored.sizeBytes());
         metadata.put("sha256", stored.sha256());
@@ -187,9 +218,9 @@ public class DocumentService {
 
         auditService.recordCandidateEvent(candidate.getId(),
                 isReupload ? AuditEventType.DOCUMENT_REUPLOADED : AuditEventType.DOCUMENT_UPLOADED,
-                candidate.getEmail(), ipAddress, type.getCode(), metadata);
+                candidate.getEmail(), ipAddress, type.code(), metadata);
 
-        log.info("Candidate {} uploaded {} (v{})", candidate.getEmail(), type.getCode(), document.getVersion());
+        log.info("Candidate {} uploaded {} (v{})", candidate.getEmail(), type.code(), document.getVersion());
         return document;
     }
 
@@ -213,12 +244,44 @@ public class DocumentService {
         documentRepository.save(document);
 
         auditService.recordHrEvent(candidate.getId(), AuditEventType.DOCUMENT_VERIFIED, hrUser.getEmail(),
-                ipAddress, document.getDocumentType().getCode(), Map.of(
-                        "documentType", document.getDocumentType().getCode(),
+                ipAddress, document.typeCode(), Map.of(
+                        "documentType", document.typeCode(),
                         "filename", document.getOriginalFilename(),
                         "version", document.getVersion()));
 
-        approvalService.evaluate(candidate);
+        return candidate.getId();
+    }
+
+    /**
+     * HR re-opens a verified document for another look, undoing a mistaken
+     * verify. Only possible before final approval - once HR approves the
+     * candidate, review closes for good.
+     */
+    @Transactional
+    public UUID reopen(UUID documentId, HrPrincipal hrUser, String ipAddress) {
+        CandidateDocument document = requireDocument(documentId);
+        Candidate candidate = document.getCandidate();
+        stageGuard.requireDocumentReviewOpen(candidate);
+
+        if (document.getStatus() != DocumentStatus.VERIFIED) {
+            throw new BusinessRuleException("DOCUMENT_NOT_VERIFIED",
+                    "Only a verified document can be reopened for re-review. This one is currently "
+                            + document.getStatus().getCode() + ".");
+        }
+
+        document.setStatus(DocumentStatus.SUBMITTED);
+        document.setReviewedBy(null);
+        document.setReviewedAt(null);
+        documentRepository.save(document);
+
+        auditService.recordHrEvent(candidate.getId(), AuditEventType.DOCUMENT_REOPENED, hrUser.getEmail(),
+                ipAddress, document.typeCode(), Map.of(
+                        "documentType", document.typeCode(),
+                        "filename", document.getOriginalFilename(),
+                        "version", document.getVersion()));
+
+        log.info("HR {} reopened {} for candidate {} for re-review", hrUser.getEmail(),
+                document.typeCode(), candidate.getEmail());
         return candidate.getId();
     }
 
@@ -242,21 +305,14 @@ public class DocumentService {
         documentRepository.save(document);
 
         auditService.recordHrEvent(candidate.getId(), AuditEventType.DOCUMENT_REJECTED, hrUser.getEmail(),
-                ipAddress, document.getDocumentType().getCode(), Map.of(
-                        "documentType", document.getDocumentType().getCode(),
+                ipAddress, document.typeCode(), Map.of(
+                        "documentType", document.typeCode(),
                         "reason", reason.trim(),
                         "version", document.getVersion()));
 
-        log.info("HR {} rejected {} for candidate {}", hrUser.getEmail(), document.getDocumentType().getCode(),
+        log.info("HR {} rejected {} for candidate {}", hrUser.getEmail(), document.typeCode(),
                 candidate.getEmail());
         return candidate.getId();
-    }
-
-    @Transactional(readOnly = true)
-    private boolean existingStatusIsRejected(Candidate candidate, DocumentType type) {
-        return documentRepository.findByCandidateIdAndDocumentType(candidate.getId(), type)
-                .map(doc -> doc.getStatus() == DocumentStatus.REJECTED)
-                .orElse(false);
     }
 
     public CandidateDocument requireDocument(UUID documentId) {

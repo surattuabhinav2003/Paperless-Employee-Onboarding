@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { CandidateTable } from '../../components/hr/CandidateTable'
 import { InviteLinkModal } from '../../components/hr/InviteLinkModal'
+import { BulkInviteModal } from '../../components/hr/BulkInviteModal'
 import { NewCandidateModal } from '../../components/hr/NewCandidateModal'
 import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
@@ -29,6 +30,7 @@ export function CandidatesPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [createOpen, setCreateOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [invitation, setInvitation] = useState(null)
 
   /*
@@ -89,7 +91,12 @@ export function CandidatesPage() {
       <PageHeader
         breadcrumb="HR console"
         title="Candidate Records"
-        actions={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setBulkOpen(true)}>Invite several</Button>
+            <Button onClick={() => setCreateOpen(true)}>New candidate</Button>
+          </>
+        }
       />
 
       <section className="c-panel">
@@ -194,6 +201,15 @@ export function CandidatesPage() {
         onClose={() => setCreateOpen(false)}
         documentTypes={metadata.data?.documentTypes || []}
         onCreated={onCreated}
+      />
+
+      <BulkInviteModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        documentTypes={metadata.data?.documentTypes || []}
+        /* Refresh only - the modal decides when to close, because it stays open
+           on a partial batch to show which rows failed. */
+        onCreated={() => page.reload().catch(() => {})}
       />
 
       <InviteLinkModal

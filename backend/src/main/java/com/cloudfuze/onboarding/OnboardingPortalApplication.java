@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableTransactionManagement
+@org.springframework.scheduling.annotation.EnableAsync
 public class OnboardingPortalApplication {
 
     public static void main(String[] args) {

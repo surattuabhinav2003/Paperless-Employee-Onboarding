@@ -4,18 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        // CloudFuze brand palette - blue, never violet.
+        // Neutara Technologies palette. The primary and the three lightest
+        // steps are sampled straight from the logo artwork, so the interface
+        // and the mark are the same blue rather than two that nearly match.
         brand: {
-          DEFAULT: '#0129AC',
-          deep: '#01133F',
+          DEFAULT: '#174F96',
+          deep: '#0D2F5C',
           // The workhorse blue for interface chrome: the same hue as the brand
           // but light enough to sit on white without shouting.
-          mid: '#2F6FD8',
-          bright: '#0C18D4',
-          light: '#809EFC',
-          tint: '#EEF3FF',
-          wash: '#F6F9FF',
-          ink: '#01133F',
+          mid: '#3F7FC9',
+          bright: '#1D63B8',
+          light: '#8BA7CA',
+          tint: '#E2E9F2',
+          wash: '#F1F4F8',
+          ink: '#0D2F5C',
         },
         // A real ink ramp. Pure #000 on white is harsh and reads cheap; a deep
         // blue-black is softer and pairs with the brand hue.

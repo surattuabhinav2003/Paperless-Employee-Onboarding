@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum OfferStatus {
 
+    /** Uploaded by HR but not yet released to the candidate. */
+    DRAFT("draft"),
     SENT("sent"),
     VIEWED("viewed"),
     ACCEPTED("accepted");

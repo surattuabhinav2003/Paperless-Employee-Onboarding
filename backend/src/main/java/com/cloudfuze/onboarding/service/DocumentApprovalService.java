@@ -1,15 +1,16 @@
 package com.cloudfuze.onboarding.service;
 
 import com.cloudfuze.onboarding.audit.AuditService;
+import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.model.AuditEventType;
 import com.cloudfuze.onboarding.model.Candidate;
+import com.cloudfuze.onboarding.model.CandidateDocument;
 import com.cloudfuze.onboarding.model.DocumentStatus;
 import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.RequiredDocument;
 import com.cloudfuze.onboarding.model.Stage;
-import com.cloudfuze.onboarding.repository.CandidateDocumentRepository;
-import com.cloudfuze.onboarding.repository.CandidateProfileRepository;
 import com.cloudfuze.onboarding.repository.CandidateRepository;
+import com.cloudfuze.onboarding.security.HrPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,12 +24,11 @@ import java.util.Map;
 /**
  * The single place the document gate opens.
  * <p>
- * The onboarding checklist is documents <em>and</em> personal details, so the
- * candidate reaches {@code docs_approved} only when every mandatory document is
- * verified <em>and</em> their details are submitted. Either of those can happen
- * last, so both {@link DocumentService} and {@link CandidateProfileService}
- * re-evaluate through here - otherwise a candidate who submits details after the
- * final verification would never advance.
+ * Verifying every mandatory document only makes a candidate <em>eligible</em>
+ * for approval - it does not approve them. Individually verifying documents
+ * (or un-verifying one to fix a mistake) stays completely reversible right up
+ * until HR deliberately clicks approve, which is the one moment that locks
+ * review, advances the stage, and unlocks the offer letter.
  */
 @Service
 public class DocumentApprovalService {
@@ -36,66 +36,57 @@ public class DocumentApprovalService {
     private static final Logger log = LoggerFactory.getLogger(DocumentApprovalService.class);
 
     private final CandidateRepository candidateRepository;
-    private final CandidateDocumentRepository documentRepository;
-    private final CandidateProfileRepository profileRepository;
     private final AuditService auditService;
 
-    public DocumentApprovalService(CandidateRepository candidateRepository,
-                                   CandidateDocumentRepository documentRepository,
-                                   CandidateProfileRepository profileRepository,
-                                   AuditService auditService) {
+    public DocumentApprovalService(CandidateRepository candidateRepository, AuditService auditService) {
         this.candidateRepository = candidateRepository;
-        this.documentRepository = documentRepository;
-        this.profileRepository = profileRepository;
         this.auditService = auditService;
     }
 
     /**
-     * Advances the candidate to {@code docs_approved} when every requirement is
-     * met. Safe to call after any document or profile change.
-     *
-     * @return true when this call advanced the stage
+     * Whether every mandatory document is verified and the candidate's pack has
+     * been submitted - the precondition for HR to approve them. Read-only; never
+     * changes the stage itself.
      */
-    @Transactional
-    public boolean evaluate(Candidate candidate) {
+    public boolean isReadyForApproval(Candidate candidate, List<CandidateDocument> documents) {
         if (candidate.getStage() != Stage.DOCS_PENDING) {
             return false;
         }
         List<RequiredDocument> mandatory = candidate.mandatoryDocuments();
-        if (mandatory.isEmpty()) {
+        if (mandatory.isEmpty() || !candidate.isSubmittedForReview()) {
             return false;
         }
 
         Map<DocumentType, DocumentStatus> statuses = new LinkedHashMap<>();
-        documentRepository.findByCandidateIdOrderByUploadedAtAsc(candidate.getId())
-                .forEach(doc -> statuses.put(doc.getDocumentType(), doc.getStatus()));
+        documents.forEach(doc -> statuses.put(doc.getDocumentType(), doc.getStatus()));
 
-        boolean allVerified = mandatory.stream()
-                .allMatch(rd -> statuses.get(rd.getDocumentType()) == DocumentStatus.VERIFIED);
-        if (!allVerified) {
-            return false;
-        }
-        if (!profileRepository.existsByCandidateId(candidate.getId())) {
-            log.info("Candidate {} has every document verified but has not submitted their details yet",
-                    candidate.getEmail());
-            return false;
-        }
-        if (!candidate.isSubmittedForReview()) {
-            log.info("Candidate {} has not submitted their onboarding package for review yet",
-                    candidate.getEmail());
-            return false;
+        return mandatory.stream().allMatch(rd -> statuses.get(rd.getDocumentType()) == DocumentStatus.VERIFIED);
+    }
+
+    /**
+     * HR's deliberate "approve" action: advances the candidate to
+     * {@code docs_approved}, closing document review and unlocking the offer
+     * stage. This is the only place that transition happens - it never occurs
+     * automatically just because the last document was verified.
+     */
+    @Transactional
+    public void approve(Candidate candidate, List<CandidateDocument> documents, HrPrincipal hrUser,
+                        String ipAddress) {
+        if (!isReadyForApproval(candidate, documents)) {
+            throw new BusinessRuleException("NOT_READY_FOR_APPROVAL",
+                    "Every mandatory document must be verified, and the candidate's pack submitted, "
+                            + "before you can approve them.");
         }
 
         candidate.setStage(Stage.DOCS_APPROVED);
         candidate.setDocsApprovedAt(Instant.now());
         candidateRepository.save(candidate);
 
-        auditService.recordSystemEvent(candidate.getId(), AuditEventType.DOCUMENTS_APPROVED, Map.of(
-                "mandatoryDocuments", mandatory.stream().map(rd -> rd.getDocumentType().getCode()).toList(),
-                "detailsSubmitted", true,
-                "submittedForReviewAt", String.valueOf(candidate.getSubmittedForReviewAt()),
-                "unlocked", "offer"));
-        log.info("Candidate {} moved to docs_approved - offer stage unlocked", candidate.getEmail());
-        return true;
+        List<RequiredDocument> mandatory = candidate.mandatoryDocuments();
+        auditService.recordHrEvent(candidate.getId(), AuditEventType.DOCUMENTS_APPROVED, hrUser.getEmail(),
+                ipAddress, null, Map.of(
+                        "mandatoryDocuments", mandatory.stream().map(rd -> rd.getDocumentType().getCode()).toList(),
+                        "unlocked", "offer"));
+        log.info("HR {} approved candidate {} - offer stage unlocked", hrUser.getEmail(), candidate.getEmail());
     }
 }

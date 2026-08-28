@@ -3,6 +3,7 @@ package com.cloudfuze.onboarding.dto;
 import com.cloudfuze.onboarding.model.OfferStatus;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record OfferDto(
@@ -16,6 +17,8 @@ public record OfferDto(
         String acceptedByName,
         String uploadedBy,
         String notes,
-        String downloadUrl
+        String downloadUrl,
+        List<OfferFieldDto> fields,
+        boolean signed
 ) {
 }

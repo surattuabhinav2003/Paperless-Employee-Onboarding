@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { DocumentViewer } from '../../components/ui/DocumentViewer'
@@ -7,7 +7,9 @@ import { ErrorState } from '../../components/ui/EmptyState'
 import { LoadingState } from '../../components/ui/Spinner'
 import { useToast } from '../../context/ToastContext'
 import { useAsync } from '../../hooks/useAsync'
+import { hrService } from '../../services/hrService'
 import { portalService } from '../../services/portalService'
+import { customFieldRows } from '../../utils/profileForm'
 import { formatDate, formatDateTime } from '../../utils/format'
 
 /**
@@ -17,6 +19,7 @@ import { formatDate, formatDateTime } from '../../utils/format'
  */
 export function PortalReviewPage() {
   const { overview, reloadOverview, token } = useOutletContext()
+  const navigate = useNavigate()
   const toast = useToast()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -24,6 +27,8 @@ export function PortalReviewPage() {
 
   const profile = useAsync(() => portalService.profile(token), [token])
   const documents = useAsync(() => portalService.documents(token), [token])
+  /* Only for the labels of admin-created fields; /api/meta is public. */
+  const meta = useAsync(() => hrService.metadata(), [])
 
   if ((profile.loading && !profile.data) || (documents.loading && !documents.data)) {
     return <LoadingState label="Loading your onboarding pack" />
@@ -45,7 +50,10 @@ export function PortalReviewPage() {
       await portalService.submitForReview(token)
       setConfirmOpen(false)
       await reloadOverview()
-      toast.success('Submitted to HR', 'We will email you as soon as the next step is ready.')
+      // Land back on the home page - that is where their status and any document
+      // HR sends back will show, so they are never stuck on this review screen.
+      navigate(`/portal/${token}`, { replace: true })
+      toast.success('Submitted to HR', 'We are reviewing your documents - we will email you when the next step is ready.')
     } catch (error) {
       setConfirmOpen(false)
       toast.apiError(error, 'We could not submit your pack')
@@ -70,7 +78,8 @@ export function PortalReviewPage() {
         </h2>
         <p className="mt-1 max-w-2xl text-[13px] leading-6 text-ink-muted">
           {submitted
-            ? `Submitted on ${formatDateTime(overview.submittedForReviewAt)}. HR has everything they need - `
+            ? `Submitted on ${formatDateTime(overview.submittedForReviewAt)}. We are reviewing your `
+              + 'documents. If HR needs any of them re-uploaded, you will be able to do it here - and '
               + 'we will email you as soon as the next step is ready.'
             : 'Read through your details and documents. Once you submit, they go to HR and you will not be '
               + 'able to change them here.'}
@@ -98,6 +107,17 @@ export function PortalReviewPage() {
             <Row label="Gender" value={profile.data.genderLabel} />
             <Row label="Blood group" value={profile.data.bloodGroupLabel} />
             <Row label="Permanent address" value={profile.data.permanentAddress} span />
+            <Row label="Aadhaar number" value={profile.data.aadhaarNumber} />
+            <Row label="PAN number" value={profile.data.panNumber} />
+            <Row label="Emergency contact" value={profile.data.emergencyContactName} />
+            <Row label="Relation" value={profile.data.emergencyContactRelationLabel} />
+            <Row label="Emergency contact number" value={profile.data.emergencyContactNumber} />
+            {/* Anything an admin added - shown here too, so a candidate can check
+                every answer they gave, not just the built-in ones. */}
+            {customFieldRows(meta.data?.customCandidateFields, profile.data.customFields)
+              .map((row) => (
+                <Row key={row.key} label={row.label} value={row.value} span={row.wide} />
+              ))}
           </dl>
         ) : (
           <p className="mt-3 text-[13px] text-ink-muted">Your details are not available right now.</p>

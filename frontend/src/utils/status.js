@@ -8,10 +8,16 @@ export const STAGE_META = {
   offer_accepted: { label: 'Complete', tone: 'green' },
 }
 
+/*
+ * "Reviewed", not "Verified": HR ticking off one document says they have looked
+ * at it, nothing more. Verification is only finished when HR approves the
+ * candidate and emails them, so that word is reserved for after that click -
+ * see documentStatusMeta below, which upgrades the label once it happens.
+ */
 export const DOCUMENT_STATUS_META = {
   pending: { label: 'Not uploaded', tone: 'grey' },
   submitted: { label: 'Awaiting review', tone: 'amber' },
-  verified: { label: 'Verified', tone: 'green' },
+  verified: { label: 'Reviewed', tone: 'green' },
   rejected: { label: 'Rejected', tone: 'red' },
 }
 
@@ -21,6 +27,7 @@ export const DOCUMENT_STATUS_META = {
  * about what HR does next, and the exact timestamp is on the record.
  */
 export const OFFER_STATUS_META = {
+  draft: { label: 'Draft', tone: 'amber' },
   sent: { label: 'Sent', tone: 'blue' },
   viewed: { label: 'Sent', tone: 'blue' },
   accepted: { label: 'Signed', tone: 'green' },
@@ -49,15 +56,17 @@ export const TONE_BARS = {
 
 /*
  * What each status actually means. Shown on hover so the row stays clean while
- * the vocabulary is never ambiguous - "Verified" in particular means every
- * required document has been checked and approved by HR, not merely uploaded.
+ * the vocabulary is never ambiguous - "Verified" in particular means HR has
+ * approved the candidate and emailed them, not merely that the documents were
+ * uploaded or individually checked off.
  */
 export const STATUS_MEANING = {
   'Upload pending': 'Waiting on the candidate to upload their documents',
   'Needs review': 'Documents uploaded - waiting on your review',
   'Re-upload needed': 'A document was sent back and needs replacing',
-  'Verified': 'All required documents verified by HR - ready for an offer',
-  'Complete': 'All documents verified by HR and the offer accepted',
+  'Ready to approve': 'Every document is reviewed - approve to unlock the offer',
+  'Verified': 'Approved by HR and the candidate emailed - ready for an offer',
+  'Complete': 'Approved by HR and the offer accepted',
   'Documents Pending': 'Waiting on the candidate to upload their documents',
 }
 
@@ -84,6 +93,11 @@ export function pipelineStatusMeta(candidate) {
   if (candidate.documentsRejected > 0) {
     return { label: 'Re-upload needed', tone: 'red' }
   }
+  // Nothing left to review, but the candidate is not approved until HR says so -
+  // surface that it is their click the record is waiting on.
+  if (candidate.readyForApproval) {
+    return { label: 'Ready to approve', tone: 'teal' }
+  }
   const everythingUploaded = candidate.documentsMissing === 0 && candidate.documentsRequired > 0
   if (candidate.submittedForReviewAt || (everythingUploaded && candidate.documentsSubmitted > 0)) {
     return { label: 'Needs review', tone: 'blue' }
@@ -109,11 +123,16 @@ export function documentProgressMeta(candidate) {
   if (submitted > 0) parts.push(`${submitted} to review`)
   if (missing > 0) parts.push(`${missing} awaiting upload`)
 
+  // Same rule as the per-document pill: everything checked off is only
+  // "verified" once HR has actually approved the candidate.
+  const approved = candidate?.stage === 'docs_approved' || candidate?.stage === 'offer_accepted'
+  const allDone = approved ? 'All verified' : 'All reviewed'
+
   return {
     uploaded,
     total,
     verified,
-    caption: parts.length ? parts.join(' · ') : total > 0 ? 'All verified' : 'None requested',
+    caption: parts.length ? parts.join(' · ') : total > 0 ? allDone : 'None requested',
     tone: total > 0 && verified === total ? 'green' : rejected > 0 ? 'amber' : 'brand',
   }
 }
@@ -123,8 +142,17 @@ export function awaitingReviewCount(candidate) {
   return candidate?.stage === 'docs_pending' ? candidate.documentsSubmitted || 0 : 0
 }
 
-export function documentStatusMeta(status) {
-  return DOCUMENT_STATUS_META[status] || { label: status || 'Unknown', tone: 'grey' }
+/**
+ * @param approved whether HR has approved the candidate and emailed them. Only
+ *   then does a checked-off document become "Verified" - before that it is
+ *   merely "Reviewed", because HR can still reopen or reject it.
+ */
+export function documentStatusMeta(status, approved = false) {
+  const meta = DOCUMENT_STATUS_META[status] || { label: status || 'Unknown', tone: 'grey' }
+  if (approved && status === 'verified') {
+    return { ...meta, label: 'Verified' }
+  }
+  return meta
 }
 
 export function offerStatusMeta(status) {

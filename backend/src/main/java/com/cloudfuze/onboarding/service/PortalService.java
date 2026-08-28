@@ -3,7 +3,6 @@ package com.cloudfuze.onboarding.service;
 import com.cloudfuze.onboarding.audit.AuditService;
 import com.cloudfuze.onboarding.config.AppProperties;
 import com.cloudfuze.onboarding.config.EmailProperties;
-import com.cloudfuze.onboarding.dto.AcceptOfferRequest;
 import com.cloudfuze.onboarding.dto.CandidateProfileDto;
 import com.cloudfuze.onboarding.dto.CandidateProfileRequest;
 import com.cloudfuze.onboarding.dto.DocumentProgressDto;
@@ -52,29 +51,56 @@ public class PortalService {
     private final CandidateRepository candidateRepository;
     private final PortalTokenService portalTokenService;
     private final DocumentService documentService;
-    private final DocumentApprovalService approvalService;
     private final CandidateProfileService profileService;
+    private final HrNotifier hrNotifier;
     private final OfferService offerService;
+    /* @Lazy breaks the cycle: verification needs the portal to authenticate
+       a link, and the portal needs verification to gate one. */
+    private final PortalVerificationService verificationService;
     private final AuditService auditService;
     private final OnboardingMapper mapper;
     private final AppProperties appProperties;
     private final EmailProperties emailProperties;
 
     public PortalService(CandidateRepository candidateRepository, PortalTokenService portalTokenService,
-                         DocumentService documentService, DocumentApprovalService approvalService,
-                         CandidateProfileService profileService,
+                         DocumentService documentService,
+                         CandidateProfileService profileService, HrNotifier hrNotifier,
                          OfferService offerService, AuditService auditService,
-                         OnboardingMapper mapper, AppProperties appProperties, EmailProperties emailProperties) {
+                         OnboardingMapper mapper, AppProperties appProperties, EmailProperties emailProperties,
+                         @org.springframework.context.annotation.Lazy
+                         PortalVerificationService verificationService) {
         this.candidateRepository = candidateRepository;
         this.portalTokenService = portalTokenService;
         this.documentService = documentService;
-        this.approvalService = approvalService;
         this.profileService = profileService;
+        this.hrNotifier = hrNotifier;
         this.offerService = offerService;
+        this.verificationService = verificationService;
         this.auditService = auditService;
         this.mapper = mapper;
         this.appProperties = appProperties;
         this.emailProperties = emailProperties;
+    }
+
+    /** Header the browser sends back once a device has been verified. */
+    public static final String DEVICE_HEADER = "X-Portal-Device";
+
+    /**
+     * Authenticates the link <em>and</em> requires that this device has proved
+     * control of the candidate's inbox.
+     *
+     * <p>Every portal endpoint uses this; only the two verification endpoints
+     * use {@link #authenticate(String)} directly, because they are how a device
+     * earns its trust in the first place.
+     */
+    public Candidate authenticateVerified(String rawToken, String deviceMarker) {
+        Candidate candidate = authenticate(rawToken);
+        if (!verificationService.isTrusted(deviceMarker, candidate)) {
+            throw new com.cloudfuze.onboarding.exception.ApiException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "VERIFICATION_REQUIRED",
+                    "Please confirm the code we emailed you before continuing.");
+        }
+        return candidate;
     }
 
     /**
@@ -156,9 +182,8 @@ public class PortalService {
                         "documents", documents.size(),
                         "userAgent", userAgent == null ? "unknown" : userAgent));
 
-        // Submitting can be the last missing piece - HR may already have verified
-        // everything while the candidate was still finishing their pack.
-        approvalService.evaluate(candidate);
+        // HR is told once, here - this is the moment the pack becomes theirs.
+        hrNotifier.candidateSubmitted(candidate, documents.size());
 
         return overview(token, ipAddress, userAgent);
     }
@@ -184,7 +209,7 @@ public class PortalService {
                 candidate.getDepartment(),
                 candidate.getStage(),
                 candidate.getStage().getLabel(),
-                headlineFor(candidate.getStage(), candidate.isSubmittedForReview()),
+                headlineFor(candidate.getStage(), candidate.isSubmittedForReview(), progress.rejected() > 0),
                 messageFor(candidate, progress, offer, profileSubmitted,
                         candidate.isSubmittedForReview()),
                 buildSteps(candidate, progress, offer, profileSubmitted, candidate.isSubmittedForReview()),
@@ -199,6 +224,9 @@ public class PortalService {
                 outstanding,
                 editable,
                 candidate.getStage().isAtLeast(Stage.DOCS_APPROVED),
+                // A drafted-but-unsent letter is not yet the candidate's business, so
+                // they may still review their documents until HR sends it.
+                offer != null && offer.getStatus() != com.cloudfuze.onboarding.model.OfferStatus.DRAFT,
                 complete,
                 candidate.getTokenExpiresAt(),
                 candidate.getCompletedAt(),
@@ -224,10 +252,10 @@ public class PortalService {
     }
 
     @Transactional
-    public PortalDocumentsDto uploadDocument(String token, DocumentType type, EducationCourse course,
+    public PortalDocumentsDto uploadDocument(String token, String typeCode, EducationCourse course,
                                             MultipartFile file, String ipAddress, String userAgent) {
         Candidate candidate = authenticate(token);
-        documentService.upload(candidate, type, course, file, ipAddress, userAgent);
+        documentService.upload(candidate, typeCode, course, file, ipAddress, userAgent);
         return documentsView(candidate, token);
     }
 
@@ -244,10 +272,10 @@ public class PortalService {
     }
 
     @Transactional
-    public PortalOfferDto acceptOffer(String token, AcceptOfferRequest request, String ipAddress,
-                                      String userAgent) {
+    public PortalOfferDto signOffer(String token, java.util.Map<Integer, String> fieldValues, String ipAddress,
+                                    String userAgent) {
         Candidate candidate = authenticate(token);
-        return offerService.accept(candidate, token, request, ipAddress, userAgent);
+        return offerService.sign(candidate, token, fieldValues, ipAddress, userAgent);
     }
 
     @Transactional(readOnly = true)
@@ -255,9 +283,15 @@ public class PortalService {
         List<CandidateDocument> documents = documentService.documentsOf(candidate.getId());
         DocumentProgressDto progress = mapper.progress(candidate, documents);
         boolean uploadAllowed = candidate.getStage() == Stage.DOCS_PENDING;
-        String message = uploadAllowed
-                ? documentMessage(progress)
-                : "All of your documents have been approved. Nothing further is needed here.";
+        String message;
+        if (!uploadAllowed) {
+            message = "All of your documents have been approved. Nothing further is needed here.";
+        } else if (candidate.isSubmittedForReview() && progress.rejected() == 0) {
+            message = "We are reviewing your documents. If HR needs any re-uploaded, you will be able "
+                    + "to do it here - we will email you when the next step is ready.";
+        } else {
+            message = documentMessage(progress);
+        }
         return new PortalDocumentsDto(uploadAllowed, message, progress,
                 mapper.toDocumentDtos(candidate, documents, doc -> mapper.portalDocumentUrl(token, doc)),
                 appProperties.getUpload().getMaxFileSizeBytes(),
@@ -306,16 +340,19 @@ public class PortalService {
 
     private String documentStatusText(DocumentProgressDto progress, boolean profileSubmitted,
                                       boolean submitted) {
+        // A sent-back document is the candidate's job again, so it outranks the
+        // "submitted" state - otherwise the tracker keeps saying "with HR" while
+        // the candidate is being asked to re-upload.
+        if (progress.rejected() > 0) {
+            return progress.rejected() == 1
+                    ? "1 document needs re-upload"
+                    : progress.rejected() + " documents need re-upload";
+        }
         if (submitted) {
             return "Submitted - with HR";
         }
         if (!profileSubmitted) {
             return "Your details are needed";
-        }
-        if (progress.rejected() > 0) {
-            return progress.rejected() == 1
-                    ? "1 document needs re-upload"
-                    : progress.rejected() + " documents need re-upload";
         }
         if (progress.missing() > 0) {
             return progress.missing() == 1
@@ -335,11 +372,15 @@ public class PortalService {
         return offer.getStatus() == OfferStatus.VIEWED ? "Awaiting your acceptance" : "Ready to review";
     }
 
-    private String headlineFor(Stage stage, boolean submitted) {
+    private String headlineFor(Stage stage, boolean submitted, boolean hasRejected) {
+        // A rejection outranks "submitted": the candidate has something to do again.
+        if (stage == Stage.DOCS_PENDING && hasRejected) {
+            return "HR needs a document re-uploaded";
+        }
         /* Once it is submitted the work is done, so the headline must not keep
            telling the candidate to complete it. */
         if (stage == Stage.DOCS_PENDING && submitted) {
-            return "Thanks - everything is with HR";
+            return "Thanks - your documents are under review";
         }
         return switch (stage) {
             case DOCS_PENDING -> "Complete your details and documents";
@@ -351,16 +392,20 @@ public class PortalService {
     private String messageFor(Candidate candidate, DocumentProgressDto progress, Offer offer,
                               boolean profileSubmitted, boolean submitted) {
         return switch (candidate.getStage()) {
-            case DOCS_PENDING -> submitted
-                    ? "Everything is with HR now. There is nothing more for you to do here - "
-                      + "we will email you as soon as the next step is ready."
-                    : profileSubmitted
-                        ? documentMessage(progress)
-                        : "Start by filling in your details, then upload the documents listed for you.";
+            // A rejection reopens work even after submitting, so it takes priority.
+            case DOCS_PENDING -> progress.rejected() > 0
+                    ? documentMessage(progress)
+                    : submitted
+                        ? "We are reviewing your documents now. If HR needs any of them re-uploaded, "
+                          + "you will be able to do it here - we will email you as soon as the next "
+                          + "step is ready."
+                        : profileSubmitted
+                            ? documentMessage(progress)
+                            : "Start by filling in your details, then upload the documents listed for you.";
             case DOCS_APPROVED -> offer == null
                     ? "Your documents are approved. HR is preparing your offer letter."
                     : "Your documents are approved. Review your offer letter and accept it to continue.";
-            case OFFER_ACCEPTED -> "Everything is done. Welcome to CloudFuze - your HR team will be in "
+            case OFFER_ACCEPTED -> "Everything is done. Welcome to Neutara - your HR team will be in "
                     + "touch with your joining details.";
         };
     }
@@ -374,7 +419,6 @@ public class PortalService {
         if (progress.missing() > 0) {
             return "Upload the documents listed below. You can do it in any order and come back any time.";
         }
-        return "Everything is with HR now. There is nothing more for you to do here - "
-                + "we will email you as soon as the next step is ready.";
+        return "You have uploaded everything. Review and submit when you are ready.";
     }
 }

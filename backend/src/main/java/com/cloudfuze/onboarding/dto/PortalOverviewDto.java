@@ -28,6 +28,9 @@ public record PortalOverviewDto(
         List<String> outstandingItems,
         boolean documentsUploadAllowed,
         boolean offerAvailable,
+        /** True once HR has uploaded the offer letter file. Until then the
+            candidate may still look back at the documents they submitted. */
+        boolean offerUploaded,
         boolean onboardingComplete,
         Instant linkExpiresAt,
         Instant completedAt,

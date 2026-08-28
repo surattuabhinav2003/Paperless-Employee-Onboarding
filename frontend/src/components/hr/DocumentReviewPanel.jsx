@@ -15,22 +15,50 @@ import { documentStatusMeta } from '../../utils/status'
  * with a reason. All decisions go through the backend, which also decides when
  * the document stage is complete.
  */
-export function DocumentReviewPanel({ documents = [], onChanged, readOnly = false }) {
+export function DocumentReviewPanel({ documents = [], candidateId, onChanged, readOnly = false }) {
   const toast = useToast()
   const [busyId, setBusyId] = useState(null)
   const [rejecting, setRejecting] = useState(null)
   const [reason, setReason] = useState('')
   const [reasonError, setReasonError] = useState(null)
   const [viewing, setViewing] = useState(null)
+  const [mandatoryBusyType, setMandatoryBusyType] = useState(null)
+
+  const toggleMandatory = async (doc) => {
+    setMandatoryBusyType(doc.type)
+    try {
+      const updated = await hrService.setDocumentMandatory(candidateId, doc.type, !doc.mandatory)
+      onChanged?.(updated)
+    } catch (error) {
+      toast.apiError(error, 'Could not update this requirement')
+    } finally {
+      setMandatoryBusyType(null)
+    }
+  }
 
   const verify = async (doc) => {
     setBusyId(doc.id)
     try {
       const updated = await hrService.verifyDocument(doc.id)
-      toast.success('Document verified', `${doc.typeLabel} is now verified.`)
+      toast.success('Document reviewed', `${doc.typeLabel} is checked off.`)
       onChanged?.(updated)
     } catch (error) {
       toast.apiError(error, 'Could not verify the document')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  // Verifying is not final - HR can change their mind on any document right up
+  // until they click Approve, which is the one action that locks review.
+  const reopen = async (doc) => {
+    setBusyId(doc.id)
+    try {
+      const updated = await hrService.reopenDocument(doc.id)
+      toast.success('Document reopened', `${doc.typeLabel} is back to awaiting review.`)
+      onChanged?.(updated)
+    } catch (error) {
+      toast.apiError(error, 'Could not reopen the document')
     } finally {
       setBusyId(null)
     }
@@ -72,7 +100,9 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
           reachable in both the full page and the narrower candidate drawer. */}
       <ul className="d-list">
         {documents.map((doc) => {
-          const meta = documentStatusMeta(doc.status)
+          // readOnly means review is closed, which only happens once HR has
+          // approved - the moment a checked-off document becomes "Verified".
+          const meta = documentStatusMeta(doc.status, readOnly)
           const busy = busyId === doc.id
           const extension = (doc.filename || '').split('.').pop()
           return (
@@ -91,10 +121,6 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
                   <div className="d-title-row">
                     <span className="d-title">{doc.typeLabel}</span>
                     <StatusPill label={meta.label} tone={meta.tone} />
-                    <span className="d-req">
-                      {doc.mandatory ? 'Mandatory' : 'Optional'}
-                      {doc.version > 1 ? ` · v${doc.version}` : ''}
-                    </span>
                     {doc.courseLabel && <span className="d-course">{doc.courseLabel}</span>}
                   </div>
 
@@ -111,6 +137,31 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
 
                   {doc.status === 'rejected' && doc.rejectReason && (
                     <p className="d-reason">{doc.rejectReason}</p>
+                  )}
+                </div>
+
+                {/* Its own fixed-width column so "Mandatory"/"Optional" lines up
+                    from row to row regardless of how long the title above it is. */}
+                <div className="d-req-col">
+                  {readOnly ? (
+                    <span className={`d-req d-req--${doc.mandatory ? 'mandatory' : 'optional'}`}>
+                      {doc.mandatory ? 'Mandatory' : 'Optional'}
+                      {doc.version > 1 ? ` · v${doc.version}` : ''}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={mandatoryBusyType === doc.type}
+                      onClick={() => toggleMandatory(doc)}
+                      title="Click to change whether this document is mandatory"
+                      className={`d-req-toggle d-req-toggle--${doc.mandatory ? 'mandatory' : 'optional'}`}
+                    >
+                      {doc.mandatory ? 'Mandatory' : 'Optional'}
+                      {doc.version > 1 ? ` · v${doc.version}` : ''}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="m7 10 5 5 5-5" />
+                      </svg>
+                    </button>
                   )}
                 </div>
 
@@ -147,6 +198,21 @@ export function DocumentReviewPanel({ documents = [], onChanged, readOnly = fals
                         Reject
                       </button>
                     </>
+                  )}
+                  {!readOnly && doc.status === 'verified' && (
+                    <button
+                      type="button"
+                      className="d-btn d-reopen"
+                      disabled={busy}
+                      title="Undo the verify and send it back to awaiting review"
+                      onClick={() => reopen(doc)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+                        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 12a9 9 0 1 1 3 6.7M3 12V7m0 5h5" />
+                      </svg>
+                      {busy ? 'Reopening' : 'Re-verify'}
+                    </button>
                   )}
                   {doc.status === 'pending' && (
                     <span className="d-waiting">Waiting on candidate</span>

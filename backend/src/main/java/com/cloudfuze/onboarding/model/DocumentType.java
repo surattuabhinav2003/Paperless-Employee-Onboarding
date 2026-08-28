@@ -30,6 +30,12 @@ public enum DocumentType {
     HIGHER_EDUCATION_PROVISIONAL("higher_education_provisional",
             "Higher Education - Provisional Certificate", Group.EDUCATION, true,
             List.of(Level.UNDERGRADUATE, Level.POSTGRADUATE)),
+    // The provisional certificate is issued right after results; the original
+    // degree certificate follows later from the university at convocation - HR
+    // asks for both because they arrive months apart.
+    HIGHER_EDUCATION_ORIGINAL_DEGREE("higher_education_original_degree",
+            "Higher Education - Original Degree Certificate", Group.EDUCATION, true,
+            List.of(Level.UNDERGRADUATE, Level.POSTGRADUATE)),
     HIGHER_EDUCATION_MARKSHEET("higher_education_marksheet",
             "Higher Education - Semester Marksheet", Group.EDUCATION, true,
             List.of(Level.UNDERGRADUATE, Level.POSTGRADUATE)),
@@ -44,13 +50,22 @@ public enum DocumentType {
     EXPERIENCE_CERTIFICATE("experience_certificate", "Experience Certificate",
             Group.EMPLOYMENT, true, List.of()),
     RELIEVING_LETTER("relieving_letter", "Relieving Letter", Group.EMPLOYMENT, true, List.of()),
-    PAYSLIPS("payslips", "Recent Payslips", Group.EMPLOYMENT, true, List.of()),
-
-    // ---- Payroll and other ----
-    BANK_DETAILS("bank_details", "Bank Details / Cancelled Cheque", Group.PAYROLL, true, List.of()),
-    OTHER("other", "Other Supporting Document", Group.OTHER, true, List.of()),
+    PREVIOUS_OFFER_LETTER("previous_offer_letter", "Previous Employer Offer Letter",
+            Group.EMPLOYMENT, true, List.of()),
+    // Six separate slots rather than one "recent payslips" upload, so HR gets a
+    // full six-month trail and the candidate can see exactly which month is
+    // still missing instead of guessing what one combined upload should contain.
+    PAYSLIP_MONTH_1("payslip_month_1", "Payslip - Most Recent Month", Group.EMPLOYMENT, true, List.of()),
+    PAYSLIP_MONTH_2("payslip_month_2", "Payslip - 2nd Most Recent Month", Group.EMPLOYMENT, true, List.of()),
+    PAYSLIP_MONTH_3("payslip_month_3", "Payslip - 3rd Most Recent Month", Group.EMPLOYMENT, true, List.of()),
+    PAYSLIP_MONTH_4("payslip_month_4", "Payslip - 4th Most Recent Month", Group.EMPLOYMENT, true, List.of()),
+    PAYSLIP_MONTH_5("payslip_month_5", "Payslip - 5th Most Recent Month", Group.EMPLOYMENT, true, List.of()),
+    PAYSLIP_MONTH_6("payslip_month_6", "Payslip - 6th Most Recent Month", Group.EMPLOYMENT, true, List.of()),
 
     // ---- Retired: readable on existing records, never offered again ----
+    PAYSLIPS("payslips", "Recent Payslips (retired)", Group.EMPLOYMENT, false, List.of()),
+    BANK_DETAILS("bank_details", "Bank Details / Cancelled Cheque (retired)", Group.PAYROLL, false, List.of()),
+    OTHER("other", "Other Supporting Document (retired)", Group.OTHER, false, List.of()),
     EDUCATION_CERTIFICATE("education_certificate", "Education Certificate (retired)",
             Group.EDUCATION, false, List.of()),
     INTERMEDIATE_CERTIFICATE("intermediate_certificate", "Class 12 / Intermediate Certificate (retired)",
@@ -77,6 +92,20 @@ public enum DocumentType {
 
         public String getLabel() {
             return label;
+        }
+
+        /* The API names groups in lowercase, like every other enum here. */
+        @JsonValue
+        public String getCode() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        @JsonCreator
+        public static Group fromCode(String code) {
+            return Arrays.stream(values())
+                    .filter(g -> g.name().equalsIgnoreCase(code))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown document group: " + code));
         }
     }
 
@@ -132,9 +161,23 @@ public enum DocumentType {
 
     @JsonCreator
     public static DocumentType fromCode(String code) {
+        return fromCodeOrEmpty(code)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown document type: " + code));
+    }
+
+    /**
+     * The built-in type for this code, if there is one.
+     *
+     * <p>Unlike {@link #fromCode}, an unknown code is not an error here - it may
+     * simply belong to a type an administrator created, which the document
+     * catalogue resolves instead.
+     */
+    public static java.util.Optional<DocumentType> fromCodeOrEmpty(String code) {
+        if (code == null || code.isBlank()) {
+            return java.util.Optional.empty();
+        }
         return Arrays.stream(values())
                 .filter(t -> t.code.equalsIgnoreCase(code) || t.name().equalsIgnoreCase(code))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown document type: " + code));
+                .findFirst();
     }
 }

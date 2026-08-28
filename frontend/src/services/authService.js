@@ -7,6 +7,13 @@ export const authService = {
     return data
   },
 
+  /** Exchanges a Microsoft ID token (from MSAL) for an app session. */
+  async microsoftLogin(idToken) {
+    const { data } = await apiClient.post('/auth/microsoft', { idToken })
+    tokenStore.set(data.token)
+    return data
+  },
+
   async me() {
     const { data } = await apiClient.get('/auth/me')
     return data

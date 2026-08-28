@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { customFieldRows } from '../../utils/profileForm'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { formatDate, formatDateTime } from '../../utils/format'
@@ -11,17 +12,26 @@ import { formatDate, formatDateTime } from '../../utils/format'
  * nine values in their own filled box made the panel read as a wall of text;
  * a definition grid with hairline rules carries the same information quietly.
  */
-export function CandidateDetailsPanel({ profile }) {
+export function CandidateDetailsPanel({ profile, onEdit, customFields = [] }) {
   const [copiedAll, setCopiedAll] = useState(false)
 
   if (!profile) {
     return (
-      <EmptyState
-        icon="document"
-        title="Details not submitted yet"
-        message="The candidate has not filled in their personal details. Their documents cannot be approved
-          until they do."
-      />
+      <div>
+        <EmptyState
+          icon="document"
+          title="Details not submitted yet"
+          message="The candidate has not filled in their personal details. Their documents cannot be approved
+            until they do."
+        />
+        {onEdit && (
+          <div className="flex justify-center pb-2">
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              Enter details for them
+            </Button>
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -35,6 +45,12 @@ export function CandidateDetailsPanel({ profile }) {
     { label: 'Gender', value: profile.genderLabel },
     { label: 'Blood group', value: profile.bloodGroupLabel },
     { label: 'Permanent address', value: profile.permanentAddress, wide: true },
+    { label: 'Aadhaar number', value: profile.aadhaarNumber },
+    { label: 'PAN number', value: profile.panNumber },
+    { label: 'Emergency contact name', value: profile.emergencyContactName },
+    { label: 'Emergency contact relation', value: profile.emergencyContactRelationLabel },
+    { label: 'Emergency contact number', value: profile.emergencyContactNumber },
+    ...customFieldRows(customFields, profile.customFields),
   ]
 
   const copyAll = async () => {
@@ -55,9 +71,16 @@ export function CandidateDetailsPanel({ profile }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-[14.5px] font-semibold text-ink">Personal information</h3>
-        <Button variant="subtle" size="sm" onClick={copyAll}>
-          {copiedAll ? 'Copied all' : 'Copy all'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="subtle" size="sm" onClick={copyAll}>
+            {copiedAll ? 'Copied all' : 'Copy all'}
+          </Button>
+          {onEdit && (
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              Edit
+            </Button>
+          )}
+        </div>
       </div>
 
       <dl className="r-fields" style={{ marginTop: 14 }}>

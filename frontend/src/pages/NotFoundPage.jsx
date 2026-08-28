@@ -9,7 +9,7 @@ export function NotFoundPage() {
       <div>
         <h1 className="text-[22px] font-semibold text-ink">This page does not exist</h1>
         <p className="mt-2 max-w-md text-[13.5px] leading-6 text-ink-muted">
-          Check the link you followed. Candidates should use the secure portal link from their CloudFuze
+          Check the link you followed. Candidates should use the secure portal link from their Neutara
           invitation email.
         </p>
       </div>

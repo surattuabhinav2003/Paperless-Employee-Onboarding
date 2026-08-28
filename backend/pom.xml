@@ -20,12 +20,49 @@
     <properties>
         <java.version>21</java.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
+        <docx4j.version>11.4.9</docx4j.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Stamps the candidate's drawn signature onto the offer letter PDF. -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+        <!--
+            Converts uploaded Word documents to PDF, so HR can upload .docx and
+            everything downstream - merging, field placement, signing - keeps
+            working on a single format. Pure Java: no LibreOffice or Word
+            process on the server.
+        -->
+        <dependency>
+            <groupId>org.docx4j</groupId>
+            <artifactId>docx4j-export-fo</artifactId>
+            <version>${docx4j.version}</version>
+            <exclusions>
+                <!-- Pulls in a rival SLF4J binding that clashes with Boot's. -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--
+            docx4j needs a concrete JAXB implementation at runtime. Without it
+            every load and save fails with "Can't instantiate JAXB Reference
+            Implementation", so this is required, not optional.
+        -->
+        <dependency>
+            <groupId>org.docx4j</groupId>
+            <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+            <version>${docx4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -34,6 +71,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- Nimbus JWT + JWKS decoding, used to validate Microsoft Entra ID
+             (Azure AD) tokens on the "Sign in with Microsoft" path. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

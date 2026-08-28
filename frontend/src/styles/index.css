@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ============================================================================
- * CloudFuze Onboarding - the HR console.
+ * Neutara Onboarding - the HR console.
  *
  * Hand-written core CSS. No @apply anywhere: every surface, colour, control and
  * type decision below is real CSS, so it can do things utilities cannot and can
@@ -11,7 +11,7 @@
  *
  * COLOUR - a deliberately small palette, but actually used:
  *   navy      the navigation rail and deep text
- *   blue      CloudFuze #0129AC, the primary action and the anchor
+ *   blue      Neutara #174F96, the primary action and the anchor
  *   teal      review / in progress
  *   amber     waiting on someone
  *   green     done
@@ -32,18 +32,19 @@
   --ink-400: #7a87a1;
   --ink-300: #9aa5bd;
 
-  /* ---- navy (the rail) ---- */
-  --navy-900: #0a1430;
-  --navy-800: #0e1c46;
-  --navy-700: #14286a;
+  /* ---- navy (the rail) - the brand blue carried down into a dark steel ---- */
+  --navy-900: #0a1c33;
+  --navy-800: #0e2949;
+  --navy-700: #133a66;
 
-  /* ---- brand blue ---- */
-  --blue-700: #0129ac;
-  --blue-600: #1c4fc4;
-  --blue-500: #2f6fd8;
-  --blue-200: #c5d8ff;
-  --blue-100: #e4edff;
-  --blue-050: #f1f6ff;
+  /* ---- Neutara brand blue ----
+     700 and the 200/100/050 tints are sampled from the logo artwork itself. */
+  --blue-700: #174f96;
+  --blue-600: #1d63b8;
+  --blue-500: #3f7fc9;
+  --blue-200: #c5d3e5;
+  --blue-100: #e2e9f2;
+  --blue-050: #f1f4f8;
 
   /* ---- supporting hues ---- */
   --teal-600: #0f9a92;
@@ -60,10 +61,10 @@
   --rose-100: #fbe5e4;
 
   /* ---- surfaces ---- */
-  --canvas: #eef2fa;
+  --canvas: #eef1f6;
   --paper: #ffffff;
-  --line: #dfe6f3;
-  --hair: #eceff8;
+  --line: #dde4ed;
+  --hair: #eaeef4;
 
   --radius: 10px;
   --radius-lg: 14px;
@@ -240,7 +241,7 @@ b {
 .cf-input:focus {
   outline: none;
   border-color: var(--blue-500);
-  box-shadow: 0 0 0 3px rgba(47, 111, 216, 0.18);
+  box-shadow: 0 0 0 3px rgba(63, 127, 201, 0.20);
 }
 
 /* Leaves room for a leading icon. */
@@ -310,7 +311,7 @@ b {
 .t-grey  i { background: var(--ink-300); }
 .t-blue  { background: var(--blue-100); border-color: var(--blue-200); color: var(--blue-700); }
 .t-blue  i { background: var(--blue-500); }
-.t-slate { background: #eef2fa; border-color: #dde4f2; color: #4b5a78; }
+.t-slate { background: #eef1f6; border-color: #dae2ec; color: #4b5a78; }
 .t-slate i { background: #8fa0c4; }
 .t-teal  { background: var(--teal-100); border-color: #bfe9e5; color: var(--teal-600); }
 .t-teal  i { background: var(--teal-500); }

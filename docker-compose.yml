@@ -11,10 +11,15 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cloudfuze_onboarding}
       POSTGRES_USER: ${POSTGRES_USER:-cloudfuze}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloudfuze}
+      # No usable default: the container refuses to start without a real
+      # password rather than quietly accepting a guessable one.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       TZ: UTC
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      # Bound to the loopback interface on purpose. Without the 127.0.0.1
+      # prefix Docker publishes on 0.0.0.0, so anyone who can reach this
+      # machine can open a psql session against the candidate data.
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - onboarding-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -31,8 +36,8 @@ services:
     restart: unless-stopped
     profiles: ['mail']
     ports:
-      - '8025:8025'
-      - '1025:1025'
+      - '127.0.0.1:8025:8025'
+      - '127.0.0.1:1025:1025'
 
 volumes:
   onboarding-db-data:

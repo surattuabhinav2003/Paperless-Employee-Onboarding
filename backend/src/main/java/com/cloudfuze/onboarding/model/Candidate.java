@@ -95,6 +95,27 @@ public class Candidate {
     @Column(name = "last_portal_access_at")
     private Instant lastPortalAccessAt;
 
+    /*
+     * Email verification. The code itself is never stored - only an HMAC of it,
+     * so a database copy alone cannot be used to guess codes offline. Six digits
+     * is small enough to brute force in the abstract, which is why attempts are
+     * capped and the code expires in minutes.
+     */
+    @Column(name = "otp_hash", length = 128)
+    private String otpHash;
+
+    @Column(name = "otp_expires_at")
+    private Instant otpExpiresAt;
+
+    @Column(name = "otp_attempts", nullable = false, columnDefinition = "integer default 0")
+    private int otpAttempts = 0;
+
+    @Column(name = "otp_sent_at")
+    private Instant otpSentAt;
+
+    @Column(name = "last_verified_at")
+    private Instant lastVerifiedAt;
+
     /** Set when the candidate reviews everything and submits it to HR. */
     @Column(name = "submitted_for_review_at")
     private Instant submittedForReviewAt;

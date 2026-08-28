@@ -50,14 +50,51 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
             throws Exception {
         http
+                /*
+                 * No CSRF token is correct here and only here: the app is stateless
+                 * and authenticates from the Authorization header, never a cookie.
+                 * If a token ever moves into a cookie this must come back.
+                 */
                 .csrf(csrf -> csrf.disable())
+                .headers(headers -> headers
+                        .contentTypeOptions(opts -> {})
+                        .frameOptions(frame -> frame.deny())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
+                        /*
+                         * The candidate's portal token lives in the URL path, so a
+                         * referrer header would leak the credential to any site they
+                         * click through to.
+                         */
+                        .referrerPolicy(referrer -> referrer.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
+                                        .ReferrerPolicy.NO_REFERRER))
+                        /*
+                         * The API returns JSON and streams uploads; it never needs to
+                         * execute script or be framed. Locking it down means a stored
+                         * file that slipped through validation still cannot run.
+                         */
+                        .addHeaderWriter((request, response) -> {
+                            response.setHeader("Content-Security-Policy",
+                                    "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; "
+                                            + "form-action 'none'; sandbox");
+                            response.setHeader("Cross-Origin-Resource-Policy", "same-site");
+                            response.setHeader("Permissions-Policy",
+                                    "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+                        }))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/session-check").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/microsoft", "/api/auth/session-check").permitAll()
                         .requestMatchers("/api/portal/**").permitAll()
+                        /* NDA + NOC recipients are not users of the app: the link's
+                           token is the credential, hashed and expiry-checked in the
+                           service exactly as portal tokens are. */
+                        .requestMatchers("/api/noc/**").permitAll()
                         .requestMatchers("/api/meta/**", "/actuator/health").permitAll()
+                        .requestMatchers("/api/hr/admin/**").hasAuthority(HrPrincipal.ADMIN_ROLE)
                         .requestMatchers("/api/hr/**").hasAuthority(HrPrincipal.ROLE)
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling

@@ -52,6 +52,7 @@ public class DataSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         AppProperties.Seed seed = appProperties.getSeed();
+        promoteConfiguredAdmins(seed);
         String email = seed.getHrEmail().trim().toLowerCase();
 
         HrUser hrUser = hrUserRepository.findByEmailIgnoreCase(email).orElse(null);
@@ -89,27 +90,45 @@ public class DataSeeder implements ApplicationRunner {
         List<CreateCandidateRequest> samples = List.of(
                 new CreateCandidateRequest("Aarav Mehta", "aarav.mehta@example.com", "Software Engineer",
                         "Engineering", List.of(
-                        new RequiredDocumentRequest(DocumentType.SSC_CERTIFICATE, true, null),
-                        new RequiredDocumentRequest(DocumentType.SECONDARY_EDUCATION_CERTIFICATE, true, null),
-                        new RequiredDocumentRequest(DocumentType.HIGHER_EDUCATION_PROVISIONAL, true, null),
-                        new RequiredDocumentRequest(DocumentType.HIGHER_EDUCATION_MARKSHEET, true, null),
-                        new RequiredDocumentRequest(DocumentType.AADHAAR_ID, true, null),
-                        new RequiredDocumentRequest(DocumentType.PAN_CARD, true, null),
-                        new RequiredDocumentRequest(DocumentType.PASSPORT_PHOTO, false, null))),
+                        new RequiredDocumentRequest(DocumentType.SSC_CERTIFICATE.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.SECONDARY_EDUCATION_CERTIFICATE.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.HIGHER_EDUCATION_PROVISIONAL.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.HIGHER_EDUCATION_MARKSHEET.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.AADHAAR_ID.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.PAN_CARD.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.PASSPORT_PHOTO.getCode(), false, null))),
                 new CreateCandidateRequest("Nisha Verma", "nisha.verma@example.com", "Customer Success Manager",
                         "Customer Success", List.of(
-                        new RequiredDocumentRequest(DocumentType.AADHAAR_ID, true, null),
-                        new RequiredDocumentRequest(DocumentType.EXPERIENCE_CERTIFICATE, true, null),
-                        new RequiredDocumentRequest(DocumentType.BANK_DETAILS, true, null))),
+                        new RequiredDocumentRequest(DocumentType.AADHAAR_ID.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.EXPERIENCE_CERTIFICATE.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.RELIEVING_LETTER.getCode(), true, null))),
                 new CreateCandidateRequest("Rohan Iyer", "rohan.iyer@example.com", "Product Designer",
                         "Design", List.of(
-                        new RequiredDocumentRequest(DocumentType.AADHAAR_ID, true, null),
-                        new RequiredDocumentRequest(DocumentType.ADDRESS_PROOF, true, null))));
+                        new RequiredDocumentRequest(DocumentType.AADHAAR_ID.getCode(), true, null),
+                        new RequiredDocumentRequest(DocumentType.ADDRESS_PROOF.getCode(), true, null))));
 
         samples.forEach(sample -> {
             var created = candidateService.create(sample, principal, "127.0.0.1");
             log.info("Seeded candidate {} - portal link: {}", sample.email(), created.invitation().portalUrl());
         });
+    }
+
+    /**
+     * Grants admin to the configured addresses. Runs every startup so an admin
+     * added to the config is promoted without anyone editing the database, and
+     * so a user auto-provisioned before the list changed still gets it.
+     *
+     * <p>Only ever promotes. Demoting happens in the admin screen; doing it here
+     * would silently undo a deliberate change on the next restart.
+     */
+    private void promoteConfiguredAdmins(AppProperties.Seed seed) {
+        hrUserRepository.findAll().stream()
+                .filter(user -> !user.isAdmin() && seed.isAdminEmail(user.getEmail()))
+                .forEach(user -> {
+                    user.setRole(com.cloudfuze.onboarding.model.HrRole.ADMIN);
+                    hrUserRepository.save(user);
+                    log.info("Granted admin to {} from the configured admin list", user.getEmail());
+                });
     }
 
     private static String randomPassword() {

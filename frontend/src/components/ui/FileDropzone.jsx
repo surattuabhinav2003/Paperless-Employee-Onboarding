@@ -7,9 +7,9 @@ import { formatBytes } from '../../utils/format'
  */
 export function FileDropzone({
   onSelect,
-  accept = '.pdf,.png,.jpg,.jpeg,.webp',
+  accept = '.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp',
   maxBytes = 10 * 1024 * 1024,
-  allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+  allowedExtensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp'],
   compact = false,
   disabled = false,
   label = 'Choose file',

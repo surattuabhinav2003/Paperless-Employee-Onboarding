@@ -19,7 +19,7 @@
   color: #fff;
   background-image:
     radial-gradient(120% 45% at 50% 0%, rgba(18, 179, 170, 0.14) 0%, transparent 60%),
-    linear-gradient(172deg, var(--navy-900) 0%, var(--navy-800) 62%, #101f52 100%);
+    linear-gradient(172deg, var(--navy-900) 0%, var(--navy-800) 62%, #143a63 100%);
 }
 
 .c-rail-top {
@@ -88,7 +88,7 @@
 
 /* Active gets a tinted bed plus a teal marker - colour, not just contrast. */
 .c-nav-item.is-active {
-  background: linear-gradient(100deg, rgba(18, 179, 170, 0.2), rgba(47, 111, 216, 0.16));
+  background: linear-gradient(100deg, rgba(18, 179, 170, 0.2), rgba(63, 127, 201, 0.18));
   color: #fff;
 }
 
@@ -222,11 +222,11 @@
   gap: 16px;
   margin-bottom: 22px;
   padding: 22px 24px;
-  border: 1px solid #dbe6fb;
+  border: 1px solid #d9e3ef;
   border-radius: var(--radius-lg);
   background-image:
     radial-gradient(120% 180% at 100% -40%, rgba(18, 179, 170, 0.16) 0%, transparent 60%),
-    linear-gradient(103deg, #ffffff 0%, var(--blue-050) 52%, #eaf3ff 100%);
+    linear-gradient(103deg, #ffffff 0%, var(--blue-050) 52%, #e7eef7 100%);
 }
 
 /* A hairline of brand colour along the top edge. */
@@ -672,9 +672,9 @@
 
 /* Five on-brand gradients, picked deterministically from the name. Same person,
    same colour, every session - which is what makes a list scannable by face. */
-.c-ring--h0 { background-image: linear-gradient(140deg, #0129ac, #2f6fd8); }
+.c-ring--h0 { background-image: linear-gradient(140deg, #174f96, #3f7fc9); }
 .c-ring--h1 { background-image: linear-gradient(140deg, #123a86, #12b3aa); }
-.c-ring--h2 { background-image: linear-gradient(140deg, #1c4fc4, #3fd6f1); }
+.c-ring--h2 { background-image: linear-gradient(140deg, #1d63b8, #3fd6f1); }
 .c-ring--h3 { background-image: linear-gradient(140deg, #0f5e8f, #2f9fd8); }
 .c-ring--h4 { background-image: linear-gradient(140deg, #2a3f8f, #6f8ae0); }
 
@@ -1215,7 +1215,7 @@
   width: 38px;
   height: 38px;
   border-radius: var(--radius);
-  background: #eef2fa;
+  background: #eef1f6;
   color: var(--ink-400);
   font-family: var(--display);
   font-size: 9px;
@@ -1238,17 +1238,22 @@
   color: var(--ink-900);
 }
 
-/* "Mandatory" was bare uppercase text floating beside a pill; it reads better
-   as a chip of its own. */
+/* Mandatory is the default nearly every row has, so it stays as quiet as
+   plain text; Optional is the exception and is the one that earns a chip, so
+   the row actually worth a second look is what catches the eye. */
 .d-req {
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: #eef2fa;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--ink-400);
+}
+
+.d-req--optional {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--amber-100);
+  font-weight: 600;
+  color: var(--amber-600);
 }
 
 .d-course {
@@ -1259,6 +1264,41 @@
   font-weight: 500;
   color: var(--blue-700);
 }
+
+/* Its own fixed-width column (see .d-req-col below) so "Mandatory"/"Optional"
+   lines up from row to row no matter how long the title above it runs. */
+.d-req-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 3px 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-400);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.d-req-toggle:disabled { cursor: not-allowed; opacity: 0.5; }
+.d-req-toggle svg { flex-shrink: 0; width: 10px; height: 10px; opacity: 0.6; }
+.d-req-toggle:hover:not(:disabled) { color: var(--ink-700); }
+
+.d-req-toggle--optional {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--amber-100);
+  font-weight: 600;
+  color: var(--amber-600);
+}
+
+.d-req-toggle--optional:hover:not(:disabled) { background: #f9e4b8; }
+
+/* Fixed width keeps the toggle/badge anchored at the same x position across
+   every row, instead of drifting with however long the title happens to be. */
+.d-req-col { flex-shrink: 0; width: 104px; }
 
 .d-meta {
   margin: 5px 0 0;
@@ -1322,6 +1362,20 @@
   border-color: #f5cbc9;
   background: var(--rose-100);
   color: var(--rose-600);
+}
+
+/* Undoes a verify - quiet until reached for, like reject, but neutral rather
+   than destructive since nothing is lost. */
+.d-reopen {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-400);
+}
+
+.d-reopen:hover:not(:disabled) {
+  border-color: var(--surface-line);
+  background: var(--surface-canvas);
+  color: var(--ink-700);
 }
 
 /* ==========================================================================
@@ -1425,7 +1479,7 @@
 .pd-req {
   padding: 2px 7px;
   border-radius: var(--radius-pill);
-  background: #eef2fa;
+  background: #eef1f6;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -1508,7 +1562,7 @@
 .dp-trigger.is-open {
   outline: none;
   border-color: var(--blue-500);
-  box-shadow: 0 0 0 3px rgba(47, 111, 216, 0.18);
+  box-shadow: 0 0 0 3px rgba(63, 127, 201, 0.20);
 }
 
 .dp-trigger:disabled { background: #f6f8fc; color: var(--ink-300); cursor: not-allowed; }
@@ -1649,3 +1703,75 @@
 
 .dp-foot button:hover { background: var(--blue-050); }
 .dp-foot button.is-muted { color: var(--ink-400); }
+
+/* ==========================================================================
+ * Passport photo cropper (candidate portal)
+ * ======================================================================== */
+
+.pc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 21, 51, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.pc-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.pc-title { font-size: 16px; color: var(--ink-900); }
+.pc-hint { margin: 5px 0 16px; font-size: 12.5px; line-height: 1.5; color: var(--ink-500); }
+
+.pc-frame {
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #0b1533;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.pc-frame:active { cursor: grabbing; }
+
+/* A light rule-of-thirds guide to help centre a face. */
+.pc-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px);
+  background-size: 33.33% 33.33%;
+  background-position: center;
+  mix-blend-mode: overlay;
+}
+
+.pc-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 4px 4px;
+  color: var(--ink-400);
+  font-size: 15px;
+}
+
+.pc-zoom input[type='range'] { flex: 1; accent-color: var(--blue-700); }
+
+.pc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}

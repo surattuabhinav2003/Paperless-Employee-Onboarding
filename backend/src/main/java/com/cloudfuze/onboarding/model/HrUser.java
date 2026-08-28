@@ -1,6 +1,8 @@
 package com.cloudfuze.onboarding.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -41,6 +43,12 @@ public class HrUser {
     @Column(name = "job_title", length = 120)
     private String jobTitle;
 
+    /* Existing rows predate roles, so the column defaults to plain HR - an
+       upgrade must never silently hand anyone admin. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private HrRole role = HrRole.HR;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
@@ -55,5 +63,9 @@ public class HrUser {
         this.passwordHash = passwordHash;
         this.fullName = fullName;
         this.jobTitle = jobTitle;
+    }
+
+    public boolean isAdmin() {
+        return role != null && role.isAdmin();
     }
 }

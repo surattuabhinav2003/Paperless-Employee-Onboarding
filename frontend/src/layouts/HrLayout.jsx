@@ -43,6 +43,19 @@ const NAV_ITEMS = [
     hint: 'Publish offers, track signatures',
     icon: 'M9 12l2 2 4-4M7.8 4.6a3 3 0 0 0-3.2 3.2 3 3 0 0 1-.8 2.4 3 3 0 0 0 0 4 3 3 0 0 1 .8 2.4 3 3 0 0 0 3.2 3.2 3 3 0 0 1 2.3 1 3 3 0 0 0 3.8 0 3 3 0 0 1 2.3-1 3 3 0 0 0 3.2-3.2 3 3 0 0 1 .8-2.4 3 3 0 0 0 0-4 3 3 0 0 1-.8-2.4 3 3 0 0 0-3.2-3.2 3 3 0 0 1-2.3-1 3 3 0 0 0-3.8 0 3 3 0 0 1-2.3 1Z',
   },
+  {
+    to: '/noc',
+    label: 'NDA & NOC',
+    hint: 'Two documents, signed as one',
+    icon: 'M14 3v5h5M16 3H7a1 1 0 0 0-1 1v3M18 8v12a1 1 0 0 1-1 1H8M4 11h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z',
+  },
+  {
+    to: '/admin',
+    label: 'Admin settings',
+    hint: 'Access, and how onboarding works',
+    adminOnly: true,
+    icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z',
+  },
 ]
 
 export function HrLayout() {
@@ -62,6 +75,11 @@ export function HrLayout() {
   }, [collapsed])
 
   const toggleCollapsed = useCallback(() => setCollapsed((current) => !current), [])
+
+  /* Hiding admin navigation is presentation only - the server refuses those
+     APIs regardless, so this just avoids offering a screen that cannot load. */
+  const isAdmin = user?.role === 'admin'
+  const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
 
   const signOut = () => {
     logout()
@@ -92,7 +110,7 @@ export function HrLayout() {
 
       <nav className="c-nav">
         {!rail && <p className="c-rail-heading">Onboarding</p>}
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

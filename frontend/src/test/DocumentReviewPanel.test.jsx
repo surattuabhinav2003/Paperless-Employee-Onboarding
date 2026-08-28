@@ -55,10 +55,18 @@ describe('DocumentReviewPanel', () => {
     expect(screen.getAllByRole('button', { name: 'Reject' })).toHaveLength(1)
   })
 
-  it('shows who reviewed a verified document', () => {
+  it('shows who reviewed a checked-off document', () => {
     renderPanel()
     expect(screen.getByText(/Reviewed by hr@cloudfuze\.com on /)).toBeInTheDocument()
+    // Not "Verified" yet - HR has not approved the candidate.
+    expect(screen.getByText('Reviewed')).toBeInTheDocument()
+    expect(screen.queryByText('Verified')).not.toBeInTheDocument()
+  })
+
+  it('upgrades the label to Verified once HR has approved', () => {
+    renderPanel({ readOnly: true })
     expect(screen.getByText('Verified')).toBeInTheDocument()
+    expect(screen.queryByText('Reviewed')).not.toBeInTheDocument()
   })
 
   it('marks documents that have not been reviewed yet', () => {
@@ -77,5 +85,11 @@ describe('DocumentReviewPanel', () => {
     renderPanel({ readOnly: true })
     expect(screen.queryByRole('button', { name: 'Verify' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Re-verify' })).not.toBeInTheDocument()
+  })
+
+  it('lets HR undo a verify before the document stage closes', () => {
+    renderPanel()
+    expect(screen.getAllByRole('button', { name: 'Re-verify' })).toHaveLength(1)
   })
 })

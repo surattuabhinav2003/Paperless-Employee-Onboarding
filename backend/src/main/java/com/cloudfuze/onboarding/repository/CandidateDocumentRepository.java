@@ -18,6 +18,29 @@ public interface CandidateDocumentRepository extends JpaRepository<CandidateDocu
 
     Optional<CandidateDocument> findByCandidateIdAndDocumentType(UUID candidateId, DocumentType documentType);
 
+    /**
+     * Looks a document up by its type code, whichever kind of type it is.
+     *
+     * <p>A built-in type is stored in the enum column with no custom code; an
+     * admin-created one under OTHER plus its code. One query covers both rather
+     * than making every caller decide which it is holding.
+     */
+    @Query("""
+            select d from CandidateDocument d
+            where d.candidate.id = :candidateId
+              and (d.customTypeCode = :typeCode
+                   or (d.customTypeCode is null and str(d.documentType) = :enumName))
+            """)
+    Optional<CandidateDocument> findByCandidateIdAndTypeCode(@Param("candidateId") UUID candidateId,
+                                                            @Param("typeCode") String typeCode,
+                                                            @Param("enumName") String enumName);
+
+    /** Convenience overload that works out the enum name for a built-in code. */
+    default Optional<CandidateDocument> findByCandidateIdAndTypeCode(UUID candidateId, String typeCode) {
+        String enumName = DocumentType.fromCodeOrEmpty(typeCode).map(Enum::name).orElse(null);
+        return findByCandidateIdAndTypeCode(candidateId, typeCode, enumName);
+    }
+
     long countByStatus(DocumentStatus status);
 
     @Query("""

@@ -15,6 +15,7 @@ public record CandidateSummaryDto(
         String department,
         Stage stage,
         String stageLabel,
+        boolean readyForApproval,
         int documentsRequired,
         int documentsVerified,
         int documentsSubmitted,

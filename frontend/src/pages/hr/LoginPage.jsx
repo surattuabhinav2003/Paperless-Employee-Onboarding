@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { microsoftLoginEnabled } from '../../services/msal'
 import '../../styles/login.css'
 
 const STEPS = [
@@ -27,7 +28,7 @@ const STEPS = [
  * component with the rest of the app, so the console is unaffected.
  */
 export function LoginPage() {
-  const { login, isAuthenticated, isLoading } = useAuth()
+  const { login, loginWithMicrosoft, isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const toast = useToast()
@@ -37,6 +38,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [msSubmitting, setMsSubmitting] = useState(false)
 
   /* The spotlight is two custom properties; writing them straight to the node
      keeps the pointer out of React state, so moving the mouse never re-renders. */
@@ -72,6 +74,17 @@ export function LoginPage() {
     }
   }
 
+  const signInWithMicrosoft = async () => {
+    setMsSubmitting(true)
+    try {
+      // Redirects the page to Microsoft; the session is finished on the way back.
+      await loginWithMicrosoft()
+    } catch (error) {
+      toast.error('Microsoft sign in failed', error.message || 'Please try again.')
+      setMsSubmitting(false)
+    }
+  }
+
   return (
     <div className="lg" onPointerMove={trackPointer}>
       <span className="lg-orb lg-orb--blue" aria-hidden="true" />
@@ -82,13 +95,11 @@ export function LoginPage() {
       <header className="lg-head">
         <div className="lg-brand">
           <span className="lg-mark">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
-              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M17.5 19H7a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 18 9.5a4.75 4.75 0 0 1-.5 9.5Z" />
-            </svg>
+            {/* The hero is a deep blue field, so the mark takes its white form. */}
+            <img src="/neutara-mark.png" alt="" aria-hidden="true" />
           </span>
           <span>
-            <span className="lg-wordmark">CloudFuze</span>
+            <span className="lg-wordmark">Neutara</span>
             <span className="lg-micro">HR Onboarding</span>
           </span>
         </div>
@@ -135,8 +146,13 @@ export function LoginPage() {
             HR console
           </p>
           <h2>Sign in</h2>
-          <p className="lg-note">Candidates never sign in - they open their own portal link.</p>
+          <p className="lg-note">
+            {microsoftLoginEnabled
+              ? 'Use your Neutara Microsoft account to sign in.'
+              : 'Candidates never sign in - they open their own portal link.'}
+          </p>
 
+          {!microsoftLoginEnabled && (
           <form className="lg-form" onSubmit={submit} noValidate>
             <div className="lg-field">
               <label className="lg-micro" htmlFor="email">Work email</label>
@@ -148,7 +164,7 @@ export function LoginPage() {
                   autoComplete="username"
                   value={email}
                   aria-invalid={errors.email ? 'true' : undefined}
-                  placeholder="you@cloudfuze.com"
+                  placeholder="you@company.com"
                   onChange={(event) => setEmail(event.target.value)}
                 />
               </div>
@@ -202,10 +218,28 @@ export function LoginPage() {
               </span>
             </button>
           </form>
+          )}
+
+          {microsoftLoginEnabled && (
+              <button
+                type="button"
+                className="lg-ms"
+                onClick={signInWithMicrosoft}
+                disabled={msSubmitting}
+              >
+                <svg viewBox="0 0 21 21" aria-hidden="true" width="18" height="18">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+                </svg>
+                {msSubmitting ? 'Opening Microsoft…' : 'Sign in with Microsoft'}
+              </button>
+          )}
 
           <p className="lg-fine">
             Sessions expire automatically and no candidate data is kept in your browser. Trouble signing in?
-            Contact your CloudFuze IT administrator.
+            Contact your Neutara IT administrator.
           </p>
         </section>
       </main>

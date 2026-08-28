@@ -6,6 +6,8 @@ const WIDTHS = {
   md: 'max-w-xl',
   lg: 'max-w-3xl',
   xl: 'max-w-5xl',
+  // Wide enough for a document alongside a tool palette and a settings panel.
+  '2xl': 'max-w-7xl',
 }
 
 export function Modal({ open, onClose, title, description, size = 'md', footer, children }) {

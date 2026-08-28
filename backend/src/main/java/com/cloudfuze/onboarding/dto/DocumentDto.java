@@ -1,7 +1,6 @@
 package com.cloudfuze.onboarding.dto;
 
 import com.cloudfuze.onboarding.model.DocumentStatus;
-import com.cloudfuze.onboarding.model.DocumentType;
 import com.cloudfuze.onboarding.model.EducationCourse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -17,7 +16,9 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public record DocumentDto(
         UUID id,
-        DocumentType type,
+        /* The type's code. A string, not the enum, because an admin-created
+           type has no enum constant - the JSON is identical either way. */
+        String type,
         String typeLabel,
         boolean mandatory,
         DocumentStatus status,

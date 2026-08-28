@@ -37,6 +37,17 @@ describe('status metadata', () => {
     expect(documentStatusMeta('verified').tone).toBe('green')
     expect(documentStatusMeta('rejected').tone).toBe('red')
   })
+
+  it('calls a checked-off document Reviewed until HR has actually approved', () => {
+    // HR ticking one document off is not verification - they can still reopen
+    // or reject it, so the word is withheld until the approval click.
+    expect(documentStatusMeta('verified').label).toBe('Reviewed')
+    expect(documentStatusMeta('verified', false).label).toBe('Reviewed')
+    expect(documentStatusMeta('verified', true).label).toBe('Verified')
+    // Approval does not change what any other status is called.
+    expect(documentStatusMeta('submitted', true).label).toBe('Awaiting review')
+    expect(documentStatusMeta('rejected', true).label).toBe('Rejected')
+  })
 })
 
 describe('pipeline status', () => {
@@ -67,6 +78,17 @@ describe('pipeline status', () => {
   it('calls out a rejected document ahead of anything else', () => {
     expect(pipelineStatusMeta({ ...base, documentsMissing: 0, documentsRejected: 1 }).label)
       .toBe('Re-upload needed')
+    // Even with everything else reviewed, a rejection outranks readiness.
+    expect(pipelineStatusMeta({ ...base, documentsMissing: 0, documentsRejected: 1,
+      documentsVerified: 2, readyForApproval: false }).label).toBe('Re-upload needed')
+  })
+
+  it('asks HR to approve once there is nothing left to review', () => {
+    // Still docs_pending - the record is waiting on HR's approval click, which
+    // is a different action from reviewing another document.
+    expect(pipelineStatusMeta({ ...base, documentsMissing: 0, documentsVerified: 3,
+      readyForApproval: true, submittedForReviewAt: '2026-08-21T00:00:00Z' }).label)
+      .toBe('Ready to approve')
   })
 
   it('reads as verified once HR approves the stage', () => {
@@ -117,8 +139,13 @@ describe('document progress', () => {
 
   it('turns green only when every document is verified', () => {
     const done = { ...base, documentsMissing: 0, documentsVerified: 3 }
-    expect(documentProgressMeta(done).caption).toBe('All verified')
     expect(documentProgressMeta(done).tone).toBe('green')
+    // Everything checked off, but HR has not approved yet, so it is not
+    // "verified" - that word waits for the approval click.
+    expect(documentProgressMeta(done).caption).toBe('All reviewed')
+    expect(documentProgressMeta({ ...done, stage: 'docs_pending' }).caption).toBe('All reviewed')
+    expect(documentProgressMeta({ ...done, stage: 'docs_approved' }).caption).toBe('All verified')
+    expect(documentProgressMeta({ ...done, stage: 'offer_accepted' }).caption).toBe('All verified')
   })
 
   it('handles a candidate with no requirements', () => {
