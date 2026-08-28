@@ -1,10 +1,34 @@
-import * as pdfjsLib from 'pdfjs-dist'
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+/*
+ * pdf.js is by far the heaviest thing this app depends on - the library and its
+ * worker together are larger than everything else put together. Only four
+ * screens ever render a PDF, so it is loaded on first use rather than imported
+ * at the top: signing in, the dashboard and the candidate list now cost nothing
+ * for a library they never touch.
+ *
+ * The import is memoised, so the second PDF on a page reuses the first load.
+ */
+let pdfjsPromise = null
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+function pdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = Promise.all([
+      import('pdfjs-dist'),
+      import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+    ]).then(([lib, worker]) => {
+      lib.GlobalWorkerOptions.workerSrc = worker.default
+      return lib
+    }).catch((error) => {
+      // Let the next attempt retry rather than caching a failed network fetch.
+      pdfjsPromise = null
+      throw error
+    })
+  }
+  return pdfjsPromise
+}
 
 /** Loads a PDF from raw bytes (an ArrayBuffer) into a pdf.js document. */
 export async function loadPdf(arrayBuffer) {
+  const pdfjsLib = await pdfjs()
   const task = pdfjsLib.getDocument({ data: arrayBuffer })
   return task.promise
 }

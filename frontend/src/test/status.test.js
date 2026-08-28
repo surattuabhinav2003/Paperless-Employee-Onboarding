@@ -11,8 +11,9 @@ import {
 describe('status metadata', () => {
   it('maps every backend stage to a label and tone', () => {
     expect(stageMeta('docs_pending').label).toBe('Documents Pending')
-    expect(stageMeta('docs_approved').label).toBe('Verified')
-    expect(stageMeta('offer_accepted').label).toBe('Complete')
+    expect(stageMeta('docs_approved').label).toBe('Verification done')
+    // Named for the act, not for a vague "complete" - the offer letter is signed.
+    expect(stageMeta('offer_accepted').label).toBe('Offer letter signed')
     // bond_signed no longer exists as a stage, so it falls through to the default.
     expect(stageMeta('bond_signed').tone).toBe('grey')
   })
@@ -92,9 +93,9 @@ describe('pipeline status', () => {
   })
 
   it('reads as verified once HR approves the stage', () => {
-    expect(pipelineStatusMeta({ ...base, stage: 'docs_approved' }).label).toBe('Verified')
+    expect(pipelineStatusMeta({ ...base, stage: 'docs_approved' }).label).toBe('Verification done')
     expect(pipelineStatusMeta({ ...base, stage: 'offer_accepted' }).label)
-      .toBe('Complete')
+      .toBe('Offer letter signed')
   })
 
   it('counts only documents actually sitting in HR queue', () => {

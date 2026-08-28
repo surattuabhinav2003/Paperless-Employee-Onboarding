@@ -10,11 +10,12 @@ import { Modal } from '../../components/ui/Modal'
 import { StatusPill } from '../../components/ui/StatusPill'
 import { useToast } from '../../context/ToastContext'
 import { useAsync } from '../../hooks/useAsync'
+import { useSignatureStyle } from '../../hooks/useSignatureStyle'
 import { fetchBytes, fileUrl } from '../../services/apiClient'
 import { portalService } from '../../services/portalService'
 import { formatDateTime } from '../../utils/format'
 import { loadPdf, renderPageToCanvas } from '../../utils/pdfRender'
-import { fieldTypeMeta, todayIso } from '../../utils/offerFields'
+import { fieldTypeMeta, signatureProgress, todayIso } from '../../utils/offerFields'
 import { offerStatusMeta } from '../../utils/status'
 
 const PAGE_CSS_WIDTH = 680
@@ -28,6 +29,9 @@ export function PortalOfferPage() {
   const [reviewing, setReviewing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [downloading, setDownloading] = useState(false)
+
+  /* Shared by every signature field on the letter - see useSignatureStyle. */
+  const signature = useSignatureStyle(overview.candidateName || '')
 
   const offerStep = overview.steps.find((step) => step.key === 'offer')
   const locked = !overview.offerAvailable
@@ -147,9 +151,9 @@ export function PortalOfferPage() {
 
   const meta = offerStatusMeta(offer.status)
   const accepted = offer.status === 'accepted'
-  const filledCount = fields.filter((_, i) => (values[i] || '').trim()).length
-  const remaining = fields.length - filledCount
-  const allDone = fields.length > 0 && remaining === 0
+  const {
+    filledCount, allDone, signatureTotal, signaturesDone, guidance,
+  } = signatureProgress(fields, values)
 
   /** Opens a field only because the candidate chose it - never pushed on them. */
   const openField = (index) => {
@@ -162,8 +166,33 @@ export function PortalOfferPage() {
       toast.error('Nothing to fill in', 'Enter something before saving this field.')
       return
     }
+    if (fields[editingIndex]?.type === 'signature') {
+      signature.rememberSource(editingIndex, signature.style.tab === 'type')
+    }
     setValues((current) => ({ ...current, [editingIndex]: draft }))
     setEditingIndex(null)
+  }
+
+  /**
+   * A typed signature is the same mark wherever it appears, so a change of face
+   * or spelling reaches every field already signed that way - not just the one
+   * being edited. The image comes from the pad rather than being re-rendered
+   * here, so it is the same code, and the same webfont, in both places.
+   */
+  const onSignatureChange = (dataUrl) => {
+    setDraft(dataUrl || '')
+    if (signature.style.tab !== 'type' || !dataUrl) return
+    setValues((current) => {
+      let changed = false
+      const next = { ...current }
+      signature.typedFields.forEach((key) => {
+        if (key !== editingIndex && next[key] !== dataUrl) {
+          next[key] = dataUrl
+          changed = true
+        }
+      })
+      return changed ? next : current
+    })
   }
 
   const submit = async () => {
@@ -228,15 +257,21 @@ export function PortalOfferPage() {
             <div>
               <h3 className="text-[15px] font-semibold text-ink">Sign your offer</h3>
               <p className="mt-1.5 text-[13px] leading-6 text-ink-muted">
-                {allDone
-                  ? 'Everything is filled in. Review it, then submit when you are happy.'
-                  : 'Read the letter below. The highlighted boxes are yours to fill in - '
-                    + 'click any one when you are ready.'}
+                {guidance}
               </p>
             </div>
-            <span className="shrink-0 rounded bg-brand-tint px-2.5 py-1 text-[11.5px] font-medium text-brand">
-              {filledCount} of {fields.length} filled in
-            </span>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {/* Signatures get their own count, ahead of the overall one: it is
+                  the number that tells you what you are being asked to do. */}
+              {signatureTotal > 0 && (
+                <span className="rounded bg-brand-tint px-2.5 py-1 text-[11.5px] font-semibold text-brand">
+                  {signaturesDone} of {signatureTotal} signed
+                </span>
+              )}
+              <span className="rounded bg-surface-canvas px-2.5 py-1 text-[11.5px] font-medium text-ink-muted">
+                {filledCount} of {fields.length} filled in
+              </span>
+            </div>
           </div>
 
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-line">
@@ -363,9 +398,10 @@ export function PortalOfferPage() {
       >
         {editing?.type === 'signature' ? (
           <SignaturePad
-            defaultName={overview.candidateName || ''}
             value={draft}
-            onChange={(dataUrl) => setDraft(dataUrl || '')}
+            onChange={onSignatureChange}
+            style={signature.style}
+            onStyleChange={signature.changeStyle}
           />
         ) : editing ? (
           <label className="block">

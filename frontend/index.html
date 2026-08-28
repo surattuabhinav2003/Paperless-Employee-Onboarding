@@ -12,11 +12,13 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Handwriting faces for the "type your signature" option on the offer letter. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Pacifico&family=Allura&family=Sacramento&display=swap"
-      rel="stylesheet"
-    />
+    <!--
+      Sign-in redirects to Microsoft, so the handshake with it is started while
+      the page is still rendering rather than at the moment the button is
+      pressed. Saves a DNS lookup and a TLS negotiation off the sign-in path.
+    -->
+    <link rel="preconnect" href="https://login.microsoftonline.com" />
+    <link rel="dns-prefetch" href="https://login.microsoftonline.com" />
     <link rel="icon" type="image/png" href="/neutara-mark.png" />
   </head>
   <body>

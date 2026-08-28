@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { SignaturePad } from '../components/portal/SignaturePad'
+import { useSignatureStyle } from '../hooks/useSignatureStyle'
 import { SignatureReviewDialog } from '../components/portal/SignatureReviewDialog'
 import { Logo } from '../components/ui/Logo'
 import { Button } from '../components/ui/Button'
@@ -38,6 +39,9 @@ export function NocSignPage() {
   const { data: packet, error, loading, setData } = useAsync(() => nocService.view(token), [token])
 
   const fields = useMemo(() => packet?.fields || [], [packet])
+
+  /* One hand across the whole document, however many places it is signed in. */
+  const signature = useSignatureStyle(packet?.recipientName || '')
   const signed = Boolean(packet?.signed)
 
   // Seed from what HR pre-filled, so the recipient edits a sensible starting
@@ -109,8 +113,29 @@ export function NocSignPage() {
   }
 
   const applyDraft = () => {
+    if (fields[editingIndex]?.type === 'signature') {
+      signature.rememberSource(editingIndex, signature.style.tab === 'type')
+    }
     setValues((current) => ({ ...current, [editingIndex]: draft }))
     setEditingIndex(null)
+  }
+
+  /* A typed signature is the same mark wherever it appears, so restyling it
+     reaches the fields already signed that way, not only the open one. */
+  const onSignatureChange = (dataUrl) => {
+    setDraft(dataUrl || '')
+    if (signature.style.tab !== 'type' || !dataUrl) return
+    setValues((current) => {
+      let changed = false
+      const next = { ...current }
+      signature.typedFields.forEach((key) => {
+        if (key !== editingIndex && next[key] !== dataUrl) {
+          next[key] = dataUrl
+          changed = true
+        }
+      })
+      return changed ? next : current
+    })
   }
 
   const allDone = fields.length > 0 && fields.every((_, i) => (values[i] || '').trim())
@@ -294,9 +319,10 @@ export function NocSignPage() {
       >
         {editing?.type === 'signature' ? (
           <SignaturePad
-            defaultName={packet.recipientName || ''}
             value={draft}
-            onChange={(dataUrl) => setDraft(dataUrl || '')}
+            onChange={onSignatureChange}
+            style={signature.style}
+            onStyleChange={signature.changeStyle}
           />
         ) : editing ? (
           <label className="block">

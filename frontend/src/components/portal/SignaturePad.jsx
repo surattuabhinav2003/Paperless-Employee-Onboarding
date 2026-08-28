@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { SIGNATURE_FONTS, typedSignatureToDataUrl } from '../../utils/offerFields'
+import { SIGNATURE_FONTS, ensureSignatureFonts, typedSignatureToDataUrl } from '../../utils/offerFields'
 
 const TABS = [
   { key: 'type', label: 'Type' },
@@ -16,26 +16,32 @@ const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
  *
  * Typing is the default because it is the one that works on every device
  * without a stylus or a scanner.
+ *
+ * <p>The tab, the typed text and the chosen face are held by the caller, not
+ * here. A document can carry several signature fields, each opened in its own
+ * dialog, and a person has one signature - keeping the choice inside this
+ * component reset it every time a dialog opened, so the second signature came
+ * out in a different hand from the first. See `useSignatureStyle`.
  */
-export function SignaturePad({ defaultName = '', value, onChange }) {
-  const [tab, setTab] = useState('type')
-  const [typed, setTyped] = useState(defaultName)
-  const [fontIndex, setFontIndex] = useState(0)
+export function SignaturePad({ value, onChange, style, onStyleChange }) {
+  const { tab, typed, fontIndex } = style
   const [uploadError, setUploadError] = useState(null)
   const [fontsReady, setFontsReady] = useState(false)
+
+  const setTab = (next) => onStyleChange({ ...style, tab: next })
+  const setTyped = (next) => onStyleChange({ ...style, typed: next })
+  const setFontIndex = (next) => onStyleChange({ ...style, fontIndex: next })
 
   const canvasRef = useRef(null)
   const drawingRef = useRef(false)
   const lastPointRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  // The typed tab cannot rasterise until the webfonts have actually loaded.
+  // The typed tab cannot rasterise until the webfonts have actually loaded, and
+  // this is the screen that asks for them in the first place.
   useEffect(() => {
     let cancelled = false
-    const families = SIGNATURE_FONTS.map((f) => `48px ${f.family}`)
-    Promise.all(families.map((f) => (document.fonts ? document.fonts.load(f) : Promise.resolve())))
-      .then(() => !cancelled && setFontsReady(true))
-      .catch(() => !cancelled && setFontsReady(true))
+    ensureSignatureFonts().then(() => !cancelled && setFontsReady(true))
     return () => { cancelled = true }
   }, [])
 

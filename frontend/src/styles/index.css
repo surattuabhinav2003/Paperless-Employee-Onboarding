@@ -421,3 +421,37 @@ b {
 @media (prefers-reduced-motion: reduce) {
   .cf-skeleton::after { animation: none; }
 }
+
+/* Holds the viewport steady while a route's chunk arrives, so the page does not
+   collapse to nothing and jump when it lands. */
+.cf-route-loading {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+}
+
+/* A button that reads as a link. Used by the HR lists and by the candidate
+   portal, so it is global rather than living in either one's stylesheet. */
+.c-linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--blue-600);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.c-linkbtn:hover { color: var(--blue-700); }
+
+/* The course badge on a document, shown to HR on the review panel and to the
+   candidate on their own checklist - so, global. */
+.d-course {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-100);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--blue-700);
+}

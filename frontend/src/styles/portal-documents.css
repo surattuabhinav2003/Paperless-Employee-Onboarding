@@ -1,0 +1,150 @@
+/*
+ * Candidate portal - the document checklist
+ *
+ * Lives beside the component rather than in console.css. These styles used to
+ * sit in the HR console's stylesheet, which the candidate portal happened to
+ * load too while every page shared one bundle. Splitting the routes ended that
+ * accident and left the portal unstyled. A component that can be mounted from
+ * either side has to carry its own styles.
+ */
+
+.pd-progress {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--blue-200);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, #f4f8ff, var(--blue-050));
+}
+
+.pd-progress-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pd-progress-count {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+
+.pd-progress-count b { color: var(--blue-700); }
+
+.pd-progress-hint { font-size: 12px; color: var(--ink-400); }
+
+.pd-bar {
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: #dbe4f6;
+  overflow: hidden;
+}
+
+.pd-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background-image: linear-gradient(90deg, var(--blue-500), var(--teal-500));
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pd-next {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-700);
+}
+
+.pd-next b { color: var(--blue-700); font-weight: 600; }
+
+/* ---- one checklist item ---- */
+
+.pd-item { display: flex; gap: 13px; padding: 16px 18px; }
+
+/* The step number, which becomes a tick once that document is in. */
+.pd-num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-400);
+}
+
+.pd-num svg { width: 13px; height: 13px; }
+
+.pd-item--done .pd-num { border-color: var(--green-500); background: var(--green-500); color: #fff; }
+.pd-item--review .pd-num { border-color: var(--teal-500); background: var(--teal-100); color: var(--teal-600); }
+.pd-item--rejected .pd-num { border-color: var(--rose-500); background: var(--rose-100); color: var(--rose-600); }
+.pd-item--next .pd-num { border-color: var(--blue-500); color: var(--blue-700); }
+
+.pd-body { flex: 1; min-width: 0; }
+
+.pd-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.pd-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.pd-req {
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: #eef1f6;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+
+.pd-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+
+.pd-file b { font-weight: 500; color: var(--ink-700); }
+
+.pd-upload { margin-top: 12px; }
+
+.pd-course { max-width: 22rem; margin-bottom: 10px; }
+
+.pd-rejected {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--rose-500);
+  border-radius: 0 6px 6px 0;
+  background: var(--rose-100);
+}
+
+.pd-rejected b {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rose-600);
+}
+
+.pd-rejected p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: #8e1010; }
+
+.pd-done-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--green-600);
+}

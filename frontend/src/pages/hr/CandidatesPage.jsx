@@ -9,14 +9,8 @@ import { Button } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/EmptyState'
 import { useAsync } from '../../hooks/useAsync'
 import { hrService } from '../../services/hrService'
+import { CANDIDATE_FILTERS, candidateFilter } from '../../utils/candidateFilters'
 import { searchCandidates } from '../../utils/search'
-
-const STAGE_FILTERS = [
-  { value: '', label: 'All' },
-  { value: 'docs_pending', label: 'Documents pending' },
-  { value: 'docs_approved', label: 'Verified' },
-  { value: 'offer_accepted', label: 'Complete' },
-]
 
 /**
  * Candidate records.
@@ -25,6 +19,11 @@ const STAGE_FILTERS = [
  * makes results instant per keystroke, lets the filter show live counts, and -
  * the reason it matters - allows typo-tolerant matching, which a SQL `LIKE`
  * cannot do. The API still caps the page at 100 records.
+ *
+ * <p>The dashboard hands over through `?filter=`: a tile links here with the
+ * group it counted, which arrives as that segment already selected. There is no
+ * second mechanism for it - the tile presses the same control HR would have
+ * pressed, so the list looks the same however you got to it.
  */
 export function CandidatesPage() {
   const navigate = useNavigate()
@@ -41,7 +40,8 @@ export function CandidatesPage() {
    */
   const [params, setParams] = useSearchParams()
   const query = params.get('q') || ''
-  const stage = params.get('stage') || ''
+  const selected = params.get('filter') || ''
+  const active = candidateFilter(selected)
 
   const update = (changes) => {
     const next = new URLSearchParams(params)
@@ -53,7 +53,7 @@ export function CandidatesPage() {
   }
 
   const setQuery = (value) => update({ q: value })
-  const setStage = (value) => update({ stage: value })
+  const setFilter = (value) => update({ filter: value })
 
   const metadata = useAsync(() => hrService.metadata(), [])
   const page = useAsync(() => hrService.candidates({ size: 100 }), [])
@@ -65,17 +65,16 @@ export function CandidatesPage() {
   /* Counts come off the search result, so the filter tells you what is actually
      behind each option for this query - not for the whole account. */
   const counts = useMemo(() => {
-    const tally = { '': search.results.length }
-    for (const filter of STAGE_FILTERS) {
-      if (!filter.value) continue
-      tally[filter.value] = search.results.filter((c) => c.stage === filter.value).length
+    const tally = {}
+    for (const filter of CANDIDATE_FILTERS) {
+      tally[filter.value] = search.results.filter(filter.match).length
     }
     return tally
   }, [search.results])
 
   const visible = useMemo(
-    () => (stage ? search.results.filter((candidate) => candidate.stage === stage) : search.results),
-    [search.results, stage],
+    () => search.results.filter(active.match),
+    [search.results, active],
   )
 
   const onCreated = (created) => {
@@ -131,15 +130,17 @@ export function CandidatesPage() {
           </div>
 
           {/* One control rather than loose chips: the options belong together,
-              and each carries its own count. */}
-          <div className="c-segctl" role="group" aria-label="Filter by stage">
-            {STAGE_FILTERS.map((filter) => (
+              and each carries its own count. This is also where a dashboard
+              tile lands - it selects a segment here rather than filtering the
+              list some other way. */}
+          <div className="c-segctl" role="group" aria-label="Filter candidates">
+            {CANDIDATE_FILTERS.map((filter) => (
               <button
                 key={filter.value || 'all'}
                 type="button"
-                className={`c-segbtn${stage === filter.value ? ' is-on' : ''}`}
-                aria-pressed={stage === filter.value}
-                onClick={() => setStage(filter.value)}
+                className={`c-segbtn${selected === filter.value ? ' is-on' : ''}`}
+                aria-pressed={selected === filter.value}
+                onClick={() => setFilter(filter.value)}
               >
                 {filter.label}
                 <b>{counts[filter.value] ?? 0}</b>
@@ -191,7 +192,11 @@ export function CandidatesPage() {
             onOpen={(candidate) => navigate(`/candidates/${candidate.id}`, {
               state: { from: `${location.pathname}${location.search}` },
             })}
-            emptyAction={<Button onClick={() => setCreateOpen(true)}>New candidate</Button>}
+            emptyAction={
+              selected
+                ? <Button variant="secondary" onClick={() => setFilter('')}>Show all candidates</Button>
+                : <Button onClick={() => setCreateOpen(true)}>New candidate</Button>
+            }
           />
         )}
       </section>

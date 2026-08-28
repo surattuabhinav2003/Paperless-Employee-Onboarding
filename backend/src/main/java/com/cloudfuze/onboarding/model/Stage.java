@@ -14,8 +14,10 @@ import java.util.Arrays;
 public enum Stage {
 
     DOCS_PENDING("docs_pending", "Documents Pending", 0),
-    DOCS_APPROVED("docs_approved", "Documents Approved", 1),
-    OFFER_ACCEPTED("offer_accepted", "Offer Accepted", 2);
+    DOCS_APPROVED("docs_approved", "Verification done", 1),
+    // Named for the act rather than a vague "complete": what happened is that
+    // the candidate signed and returned the offer letter.
+    OFFER_ACCEPTED("offer_accepted", "Offer letter signed", 2);
 
     private final String code;
     private final String label;

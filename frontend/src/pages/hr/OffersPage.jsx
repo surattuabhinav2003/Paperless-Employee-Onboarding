@@ -9,6 +9,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { hrService } from '../../services/hrService'
 import { hueOf } from '../../utils/avatar'
 import { formatRelative, initialsOf } from '../../utils/format'
+import { searchCandidates } from '../../utils/search'
 import { offerStatusMeta } from '../../utils/status'
 
 /*
@@ -16,6 +17,10 @@ import { offerStatusMeta } from '../../utils/status'
  * nobody else can be sent an offer, so nobody else belongs here.
  *
  * An offer has two states worth filtering on: out with the candidate, or signed.
+ *
+ * <p>Search works exactly as it does on the records list, and for the same
+ * reason: HR types a half-remembered name fast. It runs over the loaded page so
+ * every keystroke is instant, and it tolerates typos, which a SQL `LIKE` cannot.
  */
 const FILTERS = [
   { key: 'all', label: 'All verified' },
@@ -47,29 +52,41 @@ export function OffersPage() {
      unmounts this page. */
   const [params, setParams] = useSearchParams()
   const filter = params.get('state') || 'all'
+  const query = params.get('q') || ''
 
-  const setFilter = (value) => {
+  const update = (changes) => {
     const next = new URLSearchParams(params)
-    if (value && value !== 'all') next.set('state', value)
-    else next.delete('state')
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    }
     setParams(next, { replace: true })
   }
+
+  const setFilter = (value) => update({ state: value === 'all' ? '' : value })
+  const setQuery = (value) => update({ q: value })
 
   const list = useAsync(() => hrService.candidates({ size: 100 }), [])
   const candidates = list.data?.content || []
 
+  const search = useMemo(() => searchCandidates(candidates, query), [candidates, query])
+
   const filtered = useMemo(
-    () => candidates.filter((candidate) => matches(candidate, filter)),
-    [candidates, filter],
+    () => search.results.filter((candidate) => matches(candidate, filter)),
+    [search.results, filter],
   )
 
+  /* Counts come off the search result, so each state tells you what is behind
+     it for this query rather than for the whole desk. */
   const counts = useMemo(() => {
     const tally = {}
     for (const option of FILTERS) {
-      tally[option.key] = candidates.filter((candidate) => matches(candidate, option.key)).length
+      tally[option.key] = search.results.filter((candidate) => matches(candidate, option.key)).length
     }
     return tally
-  }, [candidates])
+  }, [search.results])
+
+  const searching = query.trim().length > 0
 
   return (
     <>
@@ -77,6 +94,35 @@ export function OffersPage() {
 
       <section className="c-panel">
         <div className="c-toolbar">
+          <div className="c-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
+              strokeLinecap="round" aria-hidden="true">
+              <path d="m21 21-4.35-4.35M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+            </svg>
+            <input
+              className="cf-input cf-input--icon"
+              type="text"
+              value={query}
+              placeholder="Search name, email, role, department"
+              aria-label="Search offers"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {searching && (
+              <button
+                type="button"
+                className="c-search-clear"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                title="Clear search"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
           <div className="c-segctl" role="group" aria-label="Filter offers">
             {FILTERS.map((option) => (
               <button
@@ -97,6 +143,32 @@ export function OffersPage() {
           </span>
         </div>
 
+        {/* The query stays put on a miss, so a typo can be corrected rather
+            than retyped from scratch. */}
+        {searching && (
+          <p className="c-searchnote">
+            {filtered.length === 0 ? (
+              <>
+                Nothing matches <b>&ldquo;{query.trim()}&rdquo;</b>. Check the spelling, or{' '}
+                <button type="button" className="c-linkbtn" onClick={() => setQuery('')}>
+                  clear the search
+                </button>
+                .
+              </>
+            ) : search.fuzzy ? (
+              <>
+                No exact match for <b>&ldquo;{query.trim()}&rdquo;</b> &ndash; showing the closest{' '}
+                {filtered.length === 1 ? 'candidate' : `${filtered.length} candidates`}.
+              </>
+            ) : (
+              <>
+                {filtered.length} {filtered.length === 1 ? 'match' : 'matches'} for{' '}
+                <b>&ldquo;{query.trim()}&rdquo;</b>, best first.
+              </>
+            )}
+          </p>
+        )}
+
         {list.error && !list.data ? (
           <ErrorState
             message={list.error.message}
@@ -109,11 +181,13 @@ export function OffersPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="check"
-            title={filter === 'all' ? 'No verified candidates yet' : 'Nothing here'}
+            title={searching ? 'No match on the offer desk' : filter === 'all' ? 'No verified candidates yet' : 'Nothing here'}
             message={
-              filter === 'all'
-                ? 'A candidate appears here the moment every one of their documents is verified.'
-                : 'No verified candidate is in this state right now.'
+              searching
+                ? 'Only candidates with every document verified reach this page - the person you want may still be in Candidate Records.'
+                : filter === 'all'
+                  ? 'A candidate appears here the moment every one of their documents is verified.'
+                  : 'No verified candidate is in this state right now.'
             }
           />
         ) : (

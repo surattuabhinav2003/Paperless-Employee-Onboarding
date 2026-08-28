@@ -1,0 +1,77 @@
+/*
+ * Passport photo cropper - see components/ui/PhotoCropper.jsx
+ *
+ * Lives beside the component rather than in console.css. These styles used to
+ * sit in the HR console's stylesheet, which the candidate portal happened to
+ * load too while every page shared one bundle. Splitting the routes ended that
+ * accident and left the portal unstyled. A component that can be mounted from
+ * either side has to carry its own styles.
+ */
+
+.pc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 21, 51, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.pc-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.pc-title { font-size: 16px; color: var(--ink-900); }
+.pc-hint { margin: 5px 0 16px; font-size: 12.5px; line-height: 1.5; color: var(--ink-500); }
+
+.pc-frame {
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #0b1533;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.pc-frame:active { cursor: grabbing; }
+
+/* A light rule-of-thirds guide to help centre a face. */
+.pc-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px);
+  background-size: 33.33% 33.33%;
+  background-position: center;
+  mix-blend-mode: overlay;
+}
+
+.pc-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 4px 4px;
+  color: var(--ink-400);
+  font-size: 15px;
+}
+
+.pc-zoom input[type='range'] { flex: 1; accent-color: var(--blue-700); }
+
+.pc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}

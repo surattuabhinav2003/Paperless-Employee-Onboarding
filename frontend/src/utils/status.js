@@ -4,8 +4,10 @@
  */
 export const STAGE_META = {
   docs_pending: { label: 'Documents Pending', tone: 'slate' },
-  docs_approved: { label: 'Verified', tone: 'green' },
-  offer_accepted: { label: 'Complete', tone: 'green' },
+  docs_approved: { label: 'Verification done', tone: 'blue' },
+  /* Not "Complete": the milestone is the signature on the offer letter, and
+     saying so is the difference between HR knowing what happened and guessing. */
+  offer_accepted: { label: 'Offer letter signed', tone: 'green' },
 }
 
 /*
@@ -56,17 +58,17 @@ export const TONE_BARS = {
 
 /*
  * What each status actually means. Shown on hover so the row stays clean while
- * the vocabulary is never ambiguous - "Verified" in particular means HR has
- * approved the candidate and emailed them, not merely that the documents were
- * uploaded or individually checked off.
+ * the vocabulary is never ambiguous - "Verification done" in particular means HR
+ * has approved the candidate and emailed them, not merely that the documents
+ * were uploaded or individually checked off.
  */
 export const STATUS_MEANING = {
   'Upload pending': 'Waiting on the candidate to upload their documents',
   'Needs review': 'Documents uploaded - waiting on your review',
   'Re-upload needed': 'A document was sent back and needs replacing',
   'Ready to approve': 'Every document is reviewed - approve to unlock the offer',
-  'Verified': 'Approved by HR and the candidate emailed - ready for an offer',
-  'Complete': 'Approved by HR and the offer accepted',
+  'Verification done': 'Approved by HR and the candidate emailed - ready for an offer',
+  'Offer letter signed': 'The candidate has signed and returned their offer letter',
   'Documents Pending': 'Waiting on the candidate to upload their documents',
 }
 

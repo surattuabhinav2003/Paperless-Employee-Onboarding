@@ -1,0 +1,177 @@
+/*
+ * Date picker - see components/ui/DateField.jsx
+ *
+ * Lives beside the component rather than in console.css. These styles used to
+ * sit in the HR console's stylesheet, which the candidate portal happened to
+ * load too while every page shared one bundle. Splitting the routes ended that
+ * accident and left the portal unstyled. A component that can be mounted from
+ * either side has to carry its own styles.
+ */
+
+.dp { position: relative; }
+
+.dp-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.dp-trigger:hover:not(:disabled) { border-color: var(--blue-200); }
+
+.dp-trigger:focus-visible,
+.dp-trigger.is-open {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(63, 127, 201, 0.20);
+}
+
+.dp-trigger:disabled { background: #f6f8fc; color: var(--ink-300); cursor: not-allowed; }
+.dp-trigger.is-empty { color: var(--ink-300); }
+.dp-trigger.is-invalid { border-color: var(--rose-500); box-shadow: 0 0 0 3px rgba(216,83,79,.16); }
+.dp-trigger svg { flex-shrink: 0; width: 16px; height: 16px; color: var(--ink-400); }
+
+/* ---- the panel ---- */
+
+.dp-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 296px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-lg);
+  animation: dp-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dp-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dp-selects { display: flex; gap: 6px; flex: 1; min-width: 0; }
+
+/* Month and year are dropdowns, not just arrows - a date of birth can be
+   decades back, and stepping there one month at a time is unusable. */
+.dp-select {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font: inherit;
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+
+.dp-select:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 1px; }
+
+.dp-nav {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink-400);
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.dp-nav:hover:not(:disabled) { background: var(--blue-050); border-color: var(--blue-200); color: var(--blue-700); }
+.dp-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+.dp-nav svg { width: 14px; height: 14px; }
+
+.dp-week,
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+.dp-week span {
+  padding: 4px 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-300);
+}
+
+.dp-day {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-700);
+  cursor: pointer;
+  transition: background-color 130ms ease, color 130ms ease;
+}
+
+.dp-day:hover:not(:disabled) { background: var(--blue-050); color: var(--blue-700); }
+.dp-day.is-outside { color: var(--ink-300); }
+.dp-day:disabled { color: #cfd6e6; cursor: not-allowed; }
+
+/* Today is outlined; the chosen day is filled. */
+.dp-day.is-today { box-shadow: inset 0 0 0 1px var(--blue-200); font-weight: 600; }
+
+.dp-day.is-selected {
+  background-image: linear-gradient(135deg, var(--blue-700), var(--blue-500));
+  color: #fff;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.dp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hair);
+}
+
+.dp-foot button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--blue-600);
+  cursor: pointer;
+}
+
+.dp-foot button:hover { background: var(--blue-050); }
+.dp-foot button.is-muted { color: var(--ink-400); }

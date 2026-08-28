@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import '../../styles/datepicker.css'
 
 /**
  * A date picker that matches the rest of the app.

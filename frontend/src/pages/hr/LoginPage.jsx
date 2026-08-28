@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -39,6 +39,30 @@ export function LoginPage() {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [msSubmitting, setMsSubmitting] = useState(false)
+
+  /*
+   * Fetch what comes next while the form is still being filled in.
+   *
+   * Splitting the routes made the sign-in page load fast, but it moved the wait
+   * to just after the password is accepted - the worst possible moment, because
+   * the person is now watching. Every visitor to this screen who signs in needs
+   * the console shell and the dashboard, so they are pulled during the seconds
+   * the form is being typed into and are already cached by the time auth
+   * returns. Idle-time, so it never competes with the page itself, and errors
+   * are ignored: this is a head start, not a dependency.
+   */
+  useEffect(() => {
+    const warm = () => {
+      import('../../layouts/HrLayout').catch(() => {})
+      import('./DashboardPage').catch(() => {})
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm, { timeout: 2000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(warm, 300)
+    return () => window.clearTimeout(id)
+  }, [])
 
   /* The spotlight is two custom properties; writing them straight to the node
      keeps the pointer out of React state, so moving the mouse never re-renders. */
