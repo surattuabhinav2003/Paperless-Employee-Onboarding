@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal'
 import { StatusPill } from '../../components/ui/StatusPill'
 import { useToast } from '../../context/ToastContext'
 import { useAsync } from '../../hooks/useAsync'
+import { useContainerWidth } from '../../hooks/useContainerWidth'
 import { useSignatureStyle } from '../../hooks/useSignatureStyle'
 import { fetchBytes, fileUrl } from '../../services/apiClient'
 import { portalService } from '../../services/portalService'
@@ -18,7 +19,9 @@ import { loadPdf, renderPageToCanvas } from '../../utils/pdfRender'
 import { fieldTypeMeta, signatureProgress, todayIso } from '../../utils/offerFields'
 import { offerStatusMeta } from '../../utils/status'
 
-const PAGE_CSS_WIDTH = 680
+/* A cap, not the render width: pages render at whatever the column
+   actually offers, so a phone gets a page that fits it. */
+const MAX_PAGE_WIDTH = 680
 
 export function PortalOfferPage() {
   const { overview, reloadOverview, token } = useOutletContext()
@@ -72,7 +75,52 @@ export function PortalOfferPage() {
   const [pdfLoading, setPdfLoading] = useState(true)
   const [pdfError, setPdfError] = useState(null)
   const canvasRefs = useRef(new Map())
+  const [pageWidth, pageAreaRef] = useContainerWidth(MAX_PAGE_WIDTH)
   const fieldRefs = useRef(new Map())
+
+  /*
+   * The submit button lives above the letter, so someone who has just filled the
+   * last field on page four is looking at the wrong end of the page and has no
+   * reason to think anything has changed. Bringing it into view is the reply to
+   * what they just did. Fires on the transition into done, not on every render
+   * while done, or scrolling away from it would be undone every time.
+   */
+  /* Computed here, above every early return, because the effect below depends
+     on it and hooks may not sit behind a conditional exit. */
+  const progress = signatureProgress(fields, values)
+  const { allDone } = progress
+
+  const submitRef = useRef(null)
+  const wasDone = useRef(false)
+  useEffect(() => {
+    if (!allDone || wasDone.current) {
+      wasDone.current = allDone
+      return undefined
+    }
+    wasDone.current = true
+
+    /*
+     * Two frames, not none. The last field is filled by saving the dialog, and
+     * the dialog holds body scroll while it is open and restores it as it
+     * unmounts - a scroll asked for in the same frame is swallowed, and the
+     * restore puts the page back where it was. Waiting for the browser to
+     * finish that is the difference between this working and doing nothing.
+     */
+    let inner = 0
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+        submitRef.current?.scrollIntoView({
+          behavior: reduced ? 'auto' : 'smooth',
+          block: 'center',
+        })
+      })
+    })
+    return () => {
+      cancelAnimationFrame(outer)
+      if (inner) cancelAnimationFrame(inner)
+    }
+  }, [allDone])
 
   useEffect(() => {
     if (!offer?.prepared || !offer.downloadUrl) return undefined
@@ -88,14 +136,14 @@ export function PortalOfferPage() {
         const bytes = await fetchBytes(offer.downloadUrl)
         const pdf = await loadPdf(bytes)
         let sizes = Array.from({ length: pdf.numPages }, (_, i) =>
-          ({ number: i + 1, width: PAGE_CSS_WIDTH, height: 0 }))
+          ({ number: i + 1, width: pageWidth, height: 0 }))
         setPages(sizes)
         await new Promise((resolve) => setTimeout(resolve, 0))
         for (let number = 1; number <= pdf.numPages; number++) {
           if (cancelled) return
           const canvas = canvasRefs.current.get(number)
           if (!canvas) continue
-          const size = await renderPageToCanvas(pdf, number, canvas, PAGE_CSS_WIDTH)
+          const size = await renderPageToCanvas(pdf, number, canvas, pageWidth)
           sizes = sizes.map((p) => (p.number === number ? { number, ...size } : p))
           setPages(sizes)
           if (number === 1) setPdfLoading(false)
@@ -111,7 +159,9 @@ export function PortalOfferPage() {
     // offer.status matters too: after signing, the same URL serves the signed
     // file, so the pages must re-render to show the stamped result.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offer?.downloadUrl, offer?.status])
+    // pageWidth is a dependency: rotating a phone changes it, and the pages
+    // have to be redrawn at the new size or the fields sit in the wrong place.
+  }, [offer?.downloadUrl, offer?.status, pageWidth])
 
   if (locked) {
     return (
@@ -152,8 +202,9 @@ export function PortalOfferPage() {
   const meta = offerStatusMeta(offer.status)
   const accepted = offer.status === 'accepted'
   const {
-    filledCount, allDone, signatureTotal, signaturesDone, guidance,
-  } = signatureProgress(fields, values)
+    filledCount, signatureTotal, signaturesDone, guidance, outstandingPages,
+  } = progress
+
 
   /** Opens a field only because the candidate chose it - never pushed on them. */
   const openField = (index) => {
@@ -281,11 +332,13 @@ export function PortalOfferPage() {
             />
           </div>
 
-          {allDone && (
-            <div className="mt-5">
-              <Button onClick={() => setReviewing(true)}>Review and submit</Button>
-            </div>
-          )}
+          <div ref={submitRef}>
+            {allDone && (
+              <div className="mt-5">
+                <Button onClick={() => setReviewing(true)}>Review and submit</Button>
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -306,7 +359,7 @@ export function PortalOfferPage() {
           </a>
         </header>
 
-        <div className="bg-surface-canvas p-3">
+        <div className="bg-surface-canvas p-2 sm:p-3" ref={pageAreaRef}>
           {pdfLoading && <LoadingState label="Loading your offer letter" />}
           {pdfError && !pdfLoading && (
             <p className="py-6 text-center text-[13px] text-accent-red">
@@ -317,10 +370,26 @@ export function PortalOfferPage() {
           {!pdfError && (
             <div className="space-y-3">
               {pages.map((page) => (
+                <div key={page.number} className="mx-auto" style={{ width: page.width, maxWidth: '100%' }}>
+                  {/* Numbered, because the guidance above says which pages need
+                      signing and that is only useful if the pages say which
+                      they are. Highlighted while something on it is unfilled. */}
+                  <div className="mb-1 flex items-center justify-between text-[11.5px]">
+                    <span className="font-medium text-ink-muted">
+                      Page {page.number} of {pages.length}
+                    </span>
+                    {/* Nothing is outstanding once it is signed - the fields
+                        are stamped into the file, and local state is empty
+                        because there is nothing left to fill in. */}
+                    {!accepted && outstandingPages.includes(page.number) && (
+                      <span className="rounded bg-brand-tint px-2 py-0.5 font-semibold text-brand">
+                        Needs you
+                      </span>
+                    )}
+                  </div>
                 <div
-                  key={page.number}
-                  className="relative mx-auto overflow-hidden rounded border border-surface-line bg-white"
-                  style={{ width: page.width, height: page.height || undefined, maxWidth: '100%' }}
+                  className="relative overflow-hidden rounded border border-surface-line bg-white"
+                  style={{ width: '100%', height: page.height || undefined }}
                 >
                   <canvas
                     ref={(el) => { if (el) canvasRefs.current.set(page.number, el) }}
@@ -369,6 +438,7 @@ export function PortalOfferPage() {
                       </button>
                     )
                   })}
+                </div>
                 </div>
               ))}
               {!pdfLoading && pages.some((p) => p.height === 0) && (

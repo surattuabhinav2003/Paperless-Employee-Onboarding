@@ -68,7 +68,7 @@ export const TEXT_FONTS = [
 
 export const TEXT_COLORS = [
   { value: '#111827', label: 'Black' },
-  { value: '#174F96', label: 'Blue' },
+  { value: '#234297', label: 'Blue' },
   { value: '#dc2626', label: 'Red' },
   { value: '#047857', label: 'Green' },
 ]
@@ -121,6 +121,15 @@ export function typedSignatureToDataUrl(text, fontFamily) {
 const places = (n) => (n === 1 ? '1 place' : `${n} places`)
 const details = (n) => (n === 1 ? '1 other detail' : `${n} other details`)
 
+/** "page 2" / "pages 1 and 3" / "pages 1, 2 and 5" - read aloud, not printed. */
+export function pageList(pages) {
+  const sorted = [...new Set(pages)].sort((a, b) => a - b)
+  if (sorted.length === 0) return ''
+  if (sorted.length === 1) return `page ${sorted[0]}`
+  const last = sorted[sorted.length - 1]
+  return `pages ${sorted.slice(0, -1).join(', ')} and ${last}`
+}
+
 /**
  * How much of the letter is left, counting signatures apart from everything
  * else.
@@ -147,6 +156,21 @@ export function signatureProgress(fields = [], values = {}) {
   const signaturesLeft = signatureTotal - signaturesDone
   const otherLeft = remaining - signaturesLeft
 
+  /*
+   * Which pages still need something. A letter can run to five pages with a
+   * signature on the second and the last, and "3 places" does not tell anyone
+   * where to scroll - saying the page numbers does.
+   */
+  const signaturePages = fields
+    .filter((field) => field.type === 'signature')
+    .map((field) => field.page)
+  const outstandingSignaturePages = fields
+    .filter((field, index) => field.type === 'signature' && !filled(index))
+    .map((field) => field.page)
+  const outstandingPages = fields
+    .filter((_, index) => !filled(index))
+    .map((field) => field.page)
+
   let guidance
   if (allDone) {
     guidance = 'Everything is filled in. Review it, then submit when you are happy.'
@@ -155,15 +179,23 @@ export function signatureProgress(fields = [], values = {}) {
       + 'click any one when you are ready.'
   } else if (signaturesDone === 0) {
     guidance = `Read the letter below. It needs your signature in ${places(signatureTotal)}`
+      + ` on ${pageList(signaturePages)}`
       + `${otherLeft > 0 ? `, plus ${details(otherLeft)}` : ''}. `
       + 'The highlighted boxes are yours to fill in - click any one when you are ready.'
   } else if (signaturesLeft > 0) {
-    guidance = `${signaturesDone} of ${signatureTotal} signatures done, ${signaturesLeft} still to go`
-      + `${otherLeft > 0 ? `, and ${details(otherLeft)}` : ''}.`
+    guidance = `${signaturesDone} of ${signatureTotal} signatures done. `
+      + `Still to sign on ${pageList(outstandingSignaturePages)}`
+      + `${otherLeft > 0 ? `, and ${details(otherLeft)} to fill in` : ''}.`
   } else {
     guidance = `All ${signatureTotal === 1 ? 'signed' : `${signatureTotal} signatures done`}. `
       + `${details(otherLeft)} still to fill in.`
   }
 
-  return { total, filledCount, remaining, allDone, signatureTotal, signaturesDone, signaturesLeft, otherLeft, guidance }
+  return {
+    total, filledCount, remaining, allDone,
+    signatureTotal, signaturesDone, signaturesLeft, otherLeft,
+    signaturePages: [...new Set(signaturePages)].sort((a, b) => a - b),
+    outstandingPages: [...new Set(outstandingPages)].sort((a, b) => a - b),
+    guidance,
+  }
 }

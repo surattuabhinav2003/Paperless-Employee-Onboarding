@@ -3,10 +3,13 @@ import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { LoadingState } from '../ui/Spinner'
 import { fetchBytes } from '../../services/apiClient'
+import { useContainerWidth } from '../../hooks/useContainerWidth'
 import { loadPdf, renderPageToCanvas } from '../../utils/pdfRender'
 import { fieldTypeMeta } from '../../utils/offerFields'
 
-const PAGE_CSS_WIDTH = 620
+/* A cap, not the render width: pages render at whatever the column
+   actually offers, so a phone gets a page that fits it. */
+const MAX_PAGE_WIDTH = 620
 
 /**
  * The last look before signing: the document itself with the answers in place.
@@ -25,6 +28,7 @@ export function SignatureReviewDialog({
   const [error, setError] = useState(null)
   const canvasRefs = useRef(new Map())
   const fieldRefs = useRef(new Map())
+  const [pageWidth, pageAreaRef] = useContainerWidth(MAX_PAGE_WIDTH)
 
   const fields = doc?.fields || []
 
@@ -39,14 +43,14 @@ export function SignatureReviewDialog({
         const bytes = await fetchBytes(doc.downloadUrl)
         const pdf = await loadPdf(bytes)
         let sizes = Array.from({ length: pdf.numPages }, (_, i) =>
-          ({ number: i + 1, width: PAGE_CSS_WIDTH, height: 0 }))
+          ({ number: i + 1, width: pageWidth, height: 0 }))
         setPages(sizes)
         await new Promise((resolve) => setTimeout(resolve, 0))
         for (let number = 1; number <= pdf.numPages; number++) {
           if (cancelled) return
           const canvas = canvasRefs.current.get(number)
           if (!canvas) continue
-          const size = await renderPageToCanvas(pdf, number, canvas, PAGE_CSS_WIDTH)
+          const size = await renderPageToCanvas(pdf, number, canvas, pageWidth)
           sizes = sizes.map((p) => (p.number === number ? { number, ...size } : p))
           setPages(sizes)
           if (number === 1) setLoading(false)
@@ -59,7 +63,7 @@ export function SignatureReviewDialog({
     }
     render()
     return () => { cancelled = true }
-  }, [open, doc?.downloadUrl])
+  }, [open, doc?.downloadUrl, pageWidth])
 
   const jumpTo = (index) =>
     fieldRefs.current.get(index)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -86,7 +90,7 @@ export function SignatureReviewDialog({
 
       {!error && (
         <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1" ref={pageAreaRef}>
             {loading && <LoadingState label="Preparing your document" />}
             <div className="space-y-4">
               {pages.map((page) => (

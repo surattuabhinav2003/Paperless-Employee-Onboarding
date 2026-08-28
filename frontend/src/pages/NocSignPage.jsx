@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { SignaturePad } from '../components/portal/SignaturePad'
+import { useContainerWidth } from '../hooks/useContainerWidth'
 import { useSignatureStyle } from '../hooks/useSignatureStyle'
 import { SignatureReviewDialog } from '../components/portal/SignatureReviewDialog'
 import { Logo } from '../components/ui/Logo'
@@ -17,7 +18,9 @@ import { formatDateTime } from '../utils/format'
 import { fieldTypeMeta, todayIso } from '../utils/offerFields'
 import { loadPdf, renderPageToCanvas } from '../utils/pdfRender'
 
-const PAGE_CSS_WIDTH = 680
+/* A cap, not the render width: pages render at whatever the column
+   actually offers, so a phone gets a page that fits it. */
+const MAX_PAGE_WIDTH = 680
 
 /**
  * Signing the combined NDA + NOC.
@@ -65,6 +68,7 @@ export function NocSignPage() {
   const [pdfLoading, setPdfLoading] = useState(true)
   const [pdfError, setPdfError] = useState(null)
   const canvasRefs = useRef(new Map())
+  const [pageWidth, pageAreaRef] = useContainerWidth(MAX_PAGE_WIDTH)
 
   const documentUrl = packet?.documentUrl
 
@@ -82,14 +86,14 @@ export function NocSignPage() {
         const bytes = await fetchBytes(documentUrl)
         const pdf = await loadPdf(bytes)
         let sizes = Array.from({ length: pdf.numPages }, (_, i) =>
-          ({ number: i + 1, width: PAGE_CSS_WIDTH, height: 0 }))
+          ({ number: i + 1, width: pageWidth, height: 0 }))
         setPages(sizes)
         await new Promise((resolve) => setTimeout(resolve, 0))
         for (let number = 1; number <= pdf.numPages; number++) {
           if (cancelled) return
           const canvas = canvasRefs.current.get(number)
           if (!canvas) continue
-          const size = await renderPageToCanvas(pdf, number, canvas, PAGE_CSS_WIDTH)
+          const size = await renderPageToCanvas(pdf, number, canvas, pageWidth)
           sizes = sizes.map((p) => (p.number === number ? { number, ...size } : p))
           setPages(sizes)
           if (number === 1) setPdfLoading(false)
@@ -103,7 +107,9 @@ export function NocSignPage() {
     render()
     return () => { cancelled = true }
     // Re-renders after signing: the same URL then serves the stamped copy.
-  }, [documentUrl, signed])
+    // Redrawn when the width changes, so rotating a phone keeps the signature
+    // fields on the part of the page they belong to.
+  }, [documentUrl, signed, pageWidth])
 
   const editing = editingIndex == null ? null : fields[editingIndex]
 
@@ -228,7 +234,11 @@ export function NocSignPage() {
           </div>
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-[14px] border border-surface-line bg-surface-canvas p-3">
+        <section
+          ref={pageAreaRef}
+          className="mt-5 overflow-hidden rounded-[14px] border border-surface-line
+            bg-surface-canvas p-2 sm:p-3"
+        >
           {pdfLoading && <LoadingState label="Loading your document" />}
           {pdfError && !pdfLoading && (
             <p className="py-6 text-center text-[13px] text-accent-red">

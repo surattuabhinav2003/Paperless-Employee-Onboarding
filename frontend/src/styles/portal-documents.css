@@ -40,7 +40,7 @@
 .pd-bar {
   height: 7px;
   border-radius: var(--radius-pill);
-  background: #dbe4f6;
+  background: #DBE2F6;
   overflow: hidden;
 }
 
@@ -95,6 +95,7 @@
   font-size: 14.5px;
   font-weight: 600;
   color: var(--ink-900);
+  overflow-wrap: anywhere;
 }
 
 .pd-req {
@@ -118,7 +119,10 @@
   color: var(--ink-400);
 }
 
-.pd-file b { font-weight: 500; color: var(--ink-700); }
+/* Candidates upload things called "WhatsApp Image 2026-08-28 at 10.14.22.jpeg".
+   Without this, one unbroken filename pushes the whole card wider than a
+   phone. */
+.pd-file b { font-weight: 500; color: var(--ink-700); overflow-wrap: anywhere; }
 
 .pd-upload { margin-top: 12px; }
 
