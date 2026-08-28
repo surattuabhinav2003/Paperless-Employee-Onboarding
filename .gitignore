@@ -5,9 +5,13 @@
 backend/src/main/resources/application-local.properties
 
 # --- uploaded documents (never commit candidate data) ---
-storage/
-backend/storage/
-backend/build/
+# Anchored with a leading slash. Unanchored, "storage/" matched every directory
+# of that name at any depth - including the Java package
+# com.cloudfuze.onboarding.storage, which was therefore never committed and
+# would have failed the build on a fresh clone.
+/storage/
+/backend/storage/
+/backend/build/
 
 # --- Java / Maven ---
 target/

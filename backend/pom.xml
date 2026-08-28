@@ -111,6 +111,30 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!--
+          Schema migrations. The application runs with ddl-auto=validate, so
+          something has to create the schema and carry it forward; before this
+          a first deploy simply failed to start.
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!--
+          /actuator/health. The properties and the security rules both already
+          referred to it; without this it answered 404 and any platform health
+          check would have restart-looped the app.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
