@@ -1,6 +1,7 @@
 package com.cloudfuze.onboarding;
 
 import com.cloudfuze.onboarding.config.EmailProperties;
+import com.cloudfuze.onboarding.email.EmailArchive;
 import com.cloudfuze.onboarding.email.EmailMessage;
 import com.cloudfuze.onboarding.email.GraphMessageFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ class GraphMessageFactoryTest {
         properties.setFromAddress("onboarding@cloudfuze.com");
         properties.setReplyTo("aditya.rompella@neutara.com");
         properties.setArchiveAddress(ARCHIVE);
-        factory = new GraphMessageFactory(properties);
+        factory = new GraphMessageFactory(properties, new EmailArchive(properties));
     }
 
     private Map<String, Object> bodyFor(String to, String html) {

@@ -2,7 +2,6 @@ package com.cloudfuze.onboarding.email;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.cloudfuze.onboarding.config.EmailProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +15,10 @@ public class LoggingEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingEmailService.class);
 
-    private final EmailProperties properties;
+    private final EmailArchive archive;
 
-    public LoggingEmailService(EmailProperties properties) {
-        this.properties = properties;
+    public LoggingEmailService(EmailArchive archive) {
+        this.archive = archive;
     }
 
     /* Shows the blind copy as well, so development does not give a misleading
@@ -36,7 +35,7 @@ public class LoggingEmailService implements EmailService {
                         {}
                         ========================================================================""",
                 message.toName(), message.toAddress(),
-                properties.archiveEnabled() ? properties.getArchiveAddress() : "(none)",
+                archive.describeFor(message),
                 message.subject(), message.textBody());
     }
 

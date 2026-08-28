@@ -22,10 +22,12 @@ public class SmtpEmailService implements EmailService {
 
     private final JavaMailSender mailSender;
     private final EmailProperties properties;
+    private final EmailArchive archive;
 
-    public SmtpEmailService(JavaMailSender mailSender, EmailProperties properties) {
+    public SmtpEmailService(JavaMailSender mailSender, EmailProperties properties, EmailArchive archive) {
         this.mailSender = mailSender;
         this.properties = properties;
+        this.archive = archive;
     }
 
     @Override
@@ -38,7 +40,7 @@ public class SmtpEmailService implements EmailService {
                 helper.setReplyTo(properties.getReplyTo());
             }
             helper.setTo(message.toAddress());
-            archiveRecipient(message).ifPresent(bcc -> {
+            archive.recipientFor(message).ifPresent(bcc -> {
                 try {
                     helper.setBcc(bcc);
                 } catch (jakarta.mail.MessagingException e) {
@@ -86,23 +88,6 @@ public class SmtpEmailService implements EmailService {
         } catch (jakarta.mail.MessagingException e) {
             log.warn("Could not attach the email logo: {}", e.getMessage());
         }
-    }
-
-    /**
-     * Who, if anyone, should be filed a copy of this message.
-     *
-     * <p>Skipped when they are already the addressee - an HR notification
-     * addressed to the same person should arrive once, not twice.
-     */
-    private java.util.Optional<String> archiveRecipient(EmailMessage message) {
-        if (!properties.archiveEnabled() || !message.archivable()) {
-            return java.util.Optional.empty();
-        }
-        String archive = properties.getArchiveAddress().trim();
-        if (archive.equalsIgnoreCase(String.valueOf(message.toAddress()).trim())) {
-            return java.util.Optional.empty();
-        }
-        return java.util.Optional.of(archive);
     }
 
     @Override

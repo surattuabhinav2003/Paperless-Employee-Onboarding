@@ -1,6 +1,7 @@
 package com.cloudfuze.onboarding;
 
 import com.cloudfuze.onboarding.config.EmailProperties;
+import com.cloudfuze.onboarding.email.EmailArchive;
 import com.cloudfuze.onboarding.email.EmailMessage;
 import com.cloudfuze.onboarding.email.SmtpEmailService;
 import jakarta.mail.Message;
@@ -54,7 +55,7 @@ class EmailArchiveTest {
         properties.setFromName("Neutara Onboarding");
         properties.setArchiveAddress(ARCHIVE);
 
-        service = new SmtpEmailService(mailSender, properties);
+        service = new SmtpEmailService(mailSender, properties, new EmailArchive(properties));
     }
 
     private MimeMessage sendTo(String recipient) throws Exception {

@@ -226,7 +226,7 @@ public class PortalVerificationService {
                   <p style="font-size:15px;color:#0b1533">Hello %s,</p>
                   <p style="font-size:14px;color:#46536e">Your Neutara onboarding verification code is:</p>
                   <p style="font-family:'Courier New',monospace;font-size:34px;font-weight:700;
-                            letter-spacing:10px;color:#174f96;margin:24px 0">%s</p>
+                            letter-spacing:10px;color:#234297;margin:24px 0">%s</p>
                   <p style="font-size:13px;color:#6b7688">It expires in 10 minutes.</p>
                   <p style="font-size:13px;color:#6b7688">If you did not ask for this code you can ignore
                      this email - your onboarding link stays safe.</p>

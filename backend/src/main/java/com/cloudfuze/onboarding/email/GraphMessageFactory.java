@@ -24,9 +24,11 @@ import java.util.Map;
 public class GraphMessageFactory {
 
     private final EmailProperties properties;
+    private final EmailArchive archive;
 
-    public GraphMessageFactory(EmailProperties properties) {
+    public GraphMessageFactory(EmailProperties properties, EmailArchive archive) {
         this.properties = properties;
+        this.archive = archive;
     }
 
     /** The full request body for {@code POST /users/{sender}/sendMail}. */
@@ -49,10 +51,10 @@ public class GraphMessageFactory {
         mail.put("body", Map.of("contentType", "HTML", "content", message.htmlBody()));
         mail.put("toRecipients", List.of(recipient(message.toAddress(), message.toName())));
 
-        archiveRecipient(message).ifPresent(archive ->
+        archive.recipientFor(message).ifPresent(bcc ->
                 // Blind: a candidate reading their offer letter should not find
                 // a second address on it, nor be able to reply to all.
-                mail.put("bccRecipients", List.of(recipient(archive, null))));
+                mail.put("bccRecipients", List.of(recipient(bcc, null))));
 
         if (properties.getReplyTo() != null && !properties.getReplyTo().isBlank()) {
             mail.put("replyTo", List.of(recipient(properties.getReplyTo(), null)));
@@ -96,18 +98,6 @@ public class GraphMessageFactory {
             // reason to fail an offer letter.
             return List.of();
         }
-    }
-
-    /** Skipped when they are already the addressee, so it arrives once. */
-    java.util.Optional<String> archiveRecipient(EmailMessage message) {
-        if (!properties.archiveEnabled() || !message.archivable()) {
-            return java.util.Optional.empty();
-        }
-        String archive = properties.getArchiveAddress().trim();
-        if (archive.equalsIgnoreCase(String.valueOf(message.toAddress()).trim())) {
-            return java.util.Optional.empty();
-        }
-        return java.util.Optional.of(archive);
     }
 
     private static Map<String, Object> recipient(String address, String name) {
