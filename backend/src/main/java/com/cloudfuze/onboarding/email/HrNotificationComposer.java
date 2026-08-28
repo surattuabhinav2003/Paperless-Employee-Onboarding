@@ -9,10 +9,10 @@ import org.springframework.stereotype.Component;
 /**
  * The emails HR gets, as opposed to the ones candidates get.
  *
- * <p>Deliberately only three moments: a candidate hands over their pack, an
- * offer is signed, an NDA + NOC is signed. Each one either needs HR to act or
- * closes something out - anything more would be noise, and HR already has the
- * console for browsing.
+ * <p>Deliberately few moments: a candidate hands over their pack, they return
+ * what was sent back, an offer is signed, an NDA + NOC is signed. Each one
+ * either needs HR to act or closes something out - anything more would be
+ * noise, and HR already has the console for browsing.
  *
  * <p>Every message links straight to the record rather than describing it, so
  * the mail is a prompt to act rather than a report to read.
@@ -23,7 +23,11 @@ public class HrNotificationComposer {
     private final EmailProperties properties;
     private final AppProperties appProperties;
 
-    public HrNotificationComposer(EmailProperties properties, AppProperties appProperties) {
+    private final MailLayout layout;
+
+    public HrNotificationComposer(EmailProperties properties, AppProperties appProperties,
+                                  MailLayout layout) {
+        this.layout = layout;
         this.properties = properties;
         this.appProperties = appProperties;
     }
@@ -47,15 +51,59 @@ public class HrNotificationComposer {
                 """.formatted(candidate.getName(), candidate.getName(), candidate.getEmail(),
                 candidate.getRole(), candidate.getDepartment(), documentCount, link);
 
-        String html = shell("Ready for your review", "#1d63b8", """
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  <b>%s</b> has submitted their onboarding pack.
-                </p>
+        String html = layout.page(
+                candidate.getName() + " has handed over their onboarding pack.",
+                "Ready for review",
+                candidate.getName() + " submitted their pack",
+                layout.p(layout.strong(candidate.getName()) + " has submitted their onboarding pack "
+                        + "for review.")
+                        + candidateFacts(candidate, "Documents", documentCount + " uploaded")
+                        + layout.button(link, "Review documents")
+                        + layout.fallbackLink(link));
+
+        return to(subject, text, html);
+    }
+
+    /**
+     * The candidate has returned every document HR sent back.
+     *
+     * <p>Rejecting a document emails the candidate, and until now the journey
+     * back was silent: HR had no way to know a replacement had arrived short of
+     * opening the record and looking. This closes that loop.
+     *
+     * @param awaitingReview how many of their documents are now sitting in HR's
+     *                       queue, so the mail says what is waiting rather than
+     *                       making HR open the record to find out
+     */
+    public EmailMessage candidateResubmitted(Candidate candidate, int awaitingReview) {
+        String noun = awaitingReview == 1 ? "document" : "documents";
+        String what = awaitingReview + " " + noun;
+        String subject = candidate.getName() + " re-sent documents for review";
+        String link = consoleUrl("/candidates/" + candidate.getId());
+
+        String text = """
+                %s has replaced everything you sent back. Their pack is ready for review again.
+
+                  Candidate  : %s <%s>
+                  Role       : %s, %s
+                  Waiting    : %s
+
+                Review them here:
                 %s
-                %s
-                """.formatted(escape(candidate.getName()),
-                facts(candidate, documentCount + " uploaded"),
-                button(link, "Review documents")));
+
+                Neutara Onboarding
+                """.formatted(candidate.getName(), candidate.getName(), candidate.getEmail(),
+                candidate.getRole(), candidate.getDepartment(), what, link);
+
+        String html = layout.page(
+                candidate.getName() + " has replaced everything you sent back.",
+                "Back with you",
+                candidate.getName() + " re-sent their documents",
+                layout.p(layout.strong(candidate.getName()) + " has replaced everything you sent back, "
+                        + "and nothing else is outstanding.")
+                        + candidateFacts(candidate, "Waiting", what)
+                        + layout.button(link, "Review documents")
+                        + layout.fallbackLink(link));
 
         return to(subject, text, html);
     }
@@ -79,15 +127,15 @@ public class HrNotificationComposer {
                 """.formatted(candidate.getName(), candidate.getName(), candidate.getEmail(),
                 candidate.getRole(), candidate.getDepartment(), signedByName, link);
 
-        String html = shell("Offer signed", "#1c8a5c", """
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  <b>%s</b> has signed their offer letter. Their onboarding is complete.
-                </p>
-                %s
-                %s
-                """.formatted(escape(candidate.getName()),
-                facts(candidate, "signed by " + escape(signedByName)),
-                button(link, "Open the signed offer")));
+        String html = layout.page(
+                candidate.getName() + " has signed. Their onboarding is complete.",
+                "Offer letter",
+                candidate.getName() + " signed their offer",
+                layout.p(layout.strong(candidate.getName()) + " has signed their offer letter. Their "
+                        + "onboarding is now complete.")
+                        + candidateFacts(candidate, "Signed by", signedByName)
+                        + layout.button(link, "Open the signed offer")
+                        + layout.fallbackLink(link));
 
         return to(subject, text, html);
     }
@@ -113,19 +161,18 @@ public class HrNotificationComposer {
                 packet.getRecipientEmail(), packet.getNdaFilename(), packet.getNocFilename(),
                 packet.getPageCount(), packet.getSignedByName(), link);
 
-        String html = shell("Document signed", "#1c8a5c", """
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  <b>%s</b> has signed the %s.
-                </p>
-                <table style="font-size:13px;color:#46536e;border-collapse:collapse;margin:14px 0">
-                  <tr><td style="padding:3px 14px 3px 0;color:#9aa5bd">Recipient</td><td>%s</td></tr>
-                  <tr><td style="padding:3px 14px 3px 0;color:#9aa5bd">Document</td><td>%d pages</td></tr>
-                  <tr><td style="padding:3px 14px 3px 0;color:#9aa5bd">Signed by</td><td>%s</td></tr>
-                </table>
-                %s
-                """.formatted(escape(packet.getRecipientName()), escape(what),
-                escape(packet.getRecipientEmail()), packet.getPageCount(),
-                escape(packet.getSignedByName()), button(link, "Download signed copy")));
+        String html = layout.page(
+                packet.getRecipientName() + " has signed and returned the document.",
+                "NDA + NOC",
+                packet.getRecipientName() + " signed the " + what,
+                layout.p(layout.strong(packet.getRecipientName()) + " has signed the "
+                        + layout.escape(what) + ".")
+                        + layout.facts(
+                                "Recipient", packet.getRecipientName() + " <" + packet.getRecipientEmail() + ">",
+                                "Document", packet.getPageCount() + " pages",
+                                "Signed by", String.valueOf(packet.getSignedByName()))
+                        + layout.button(link, "Download the signed copy")
+                        + layout.fallbackLink(link));
 
         return to(subject, text, html);
     }
@@ -143,44 +190,11 @@ public class HrNotificationComposer {
         return (base.endsWith("/") ? base.substring(0, base.length() - 1) : base) + path;
     }
 
-    private String facts(Candidate candidate, String extra) {
-        return """
-                <table style="font-size:13px;color:#46536e;border-collapse:collapse;margin:14px 0">
-                  <tr><td style="padding:3px 14px 3px 0;color:#9aa5bd">Candidate</td><td>%s</td></tr>
-                  <tr><td style="padding:3px 14px 3px 0;color:#9aa5bd">Role</td><td>%s, %s</td></tr>
-                  <tr><td style="padding:3px 14px 3px 0;color:#9aa5bd">Documents</td><td>%s</td></tr>
-                </table>
-                """.formatted(escape(candidate.getEmail()), escape(candidate.getRole()),
-                escape(candidate.getDepartment()), extra);
-    }
-
-    private String shell(String heading, String accent, String body) {
-        return """
-                <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f6fb;padding:32px">
-                  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e9f5">
-                    <div style="background:#174F96;padding:22px 26px;color:#ffffff">
-                      <div style="font-size:19px;font-weight:600;letter-spacing:-0.2px">Neutara</div>
-                      <div style="font-size:13px;opacity:0.85;margin-top:2px">People Operations &middot; HR console</div>
-                    </div>
-                    <div style="padding:24px 26px">
-                      <div style="font-size:17px;font-weight:600;color:%s;margin-bottom:12px">%s</div>
-                      %s
-                    </div>
-                  </div>
-                </div>
-                """.formatted(accent, heading, body);
-    }
-
-    private String button(String url, String label) {
-        return """
-                <p style="margin:20px 0">
-                  <a href="%s" style="display:inline-block;background:#174F96;color:#ffffff;
-                     text-decoration:none;font-size:14px;font-weight:600;padding:11px 22px;border-radius:8px">%s</a>
-                </p>
-                """.formatted(url, label);
-    }
-
-    private String escape(String value) {
-        return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    /** The three facts every candidate email repeats, plus one for the occasion. */
+    private String candidateFacts(Candidate candidate, String extraLabel, String extraValue) {
+        return layout.facts(
+                "Candidate", candidate.getName() + " <" + candidate.getEmail() + ">",
+                "Role", candidate.getRole() + ", " + candidate.getDepartment(),
+                extraLabel, extraValue);
     }
 }

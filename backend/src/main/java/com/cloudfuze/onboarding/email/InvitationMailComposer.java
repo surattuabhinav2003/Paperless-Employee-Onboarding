@@ -39,8 +39,11 @@ public class InvitationMailComposer {
 
     private final EmailProperties properties;
 
-    public InvitationMailComposer(EmailProperties properties) {
+    private final MailLayout layout;
+
+    public InvitationMailComposer(EmailProperties properties, MailLayout layout) {
         this.properties = properties;
+        this.layout = layout;
     }
 
     public EmailMessage compose(Candidate candidate, String portalUrl, Instant expiresAt, Kind kind) {
@@ -78,56 +81,33 @@ public class InvitationMailComposer {
                 portalUrl, documentList.isBlank() ? "  - (none listed)" : documentList,
                 expiry, properties.getSupportContact());
 
-        String documentRows = candidate.getRequiredDocuments().stream()
+        String documentRows = layout.list(candidate.getRequiredDocuments().stream()
                 .map(this::htmlDocumentRow)
-                .collect(Collectors.joining());
+                .toArray(String[]::new));
 
-        String html = """
-                <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f6fb;padding:32px">
-                  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e9f5">
-                    <div style="background:#174F96;padding:24px 28px;color:#ffffff">
-                      <div style="font-size:20px;font-weight:600;letter-spacing:-0.2px">Neutara</div>
-                      <div style="font-size:13px;opacity:0.85;margin-top:2px">People Operations &middot; Onboarding</div>
-                    </div>
-                    <div style="padding:28px">
-                      <p style="margin:0 0 14px;font-size:16px;color:#0f172a">Hi %s,</p>
-                      <p style="margin:0 0 18px;font-size:14px;line-height:22px;color:#42506b">
-                        Welcome to Neutara. Your onboarding for the <strong>%s</strong> role in
-                        <strong>%s</strong> is ready. Everything happens in one secure portal.
-                      </p>
-                      <table style="width:100%%;border-collapse:collapse;margin:0 0 22px">
-                        <tr>
-                          <td style="font-size:13px;color:#42506b;padding:6px 0">1. Upload your documents</td>
-                        </tr>
-                        <tr>
-                          <td style="font-size:13px;color:#42506b;padding:6px 0">2. Review and accept your offer letter</td>
-                        </tr>
-                        <tr>
-                        </tr>
-                      </table>
-                      <a href="%s" style="display:inline-block;background:#174F96;color:#ffffff;text-decoration:none;
-                         padding:13px 26px;border-radius:8px;font-size:14px;font-weight:600">Open my onboarding portal</a>
-                      <p style="margin:22px 0 8px;font-size:13px;font-weight:600;color:#0f172a">Documents we need</p>
-                      <table style="width:100%%;border-collapse:collapse;font-size:13px;color:#42506b">%s</table>
-                      <div style="margin-top:24px;padding:14px 16px;background:#f4f6fb;border-radius:10px;font-size:12px;color:#5b6883;line-height:19px">
-                        This link is personal to you - please do not forward it. It stays valid until
-                        <strong>%s</strong>. Neutara will never ask for your password or payment details
-                        during onboarding. Need help? Contact %s.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                """.formatted(candidate.getName(), candidate.getRole(), candidate.getDepartment(), portalUrl,
-                documentRows, expiry, properties.getSupportContact());
+        String html = layout.page(
+                "Upload your documents and sign your offer, all in one secure portal.",
+                "Onboarding",
+                "Welcome to Neutara, " + candidate.getName().split(" ")[0],
+                layout.p("Your onboarding for the " + layout.strong(candidate.getRole()) + " role in "
+                        + layout.strong(candidate.getDepartment()) + " is ready. Everything happens in "
+                        + "one secure portal - upload what we need, then read and sign your offer "
+                        + "letter when it arrives.")
+                        + layout.button(portalUrl, "Open my onboarding portal")
+                        + layout.fallbackLink(portalUrl)
+                        + layout.p("<strong style=\"font-weight:600;color:#0f1b33\">Documents we need "
+                                + "from you</strong>")
+                        + layout.panel(documentRows)
+                        + layout.note("This link is personal to you - please do not forward it. It stays "
+                                + "valid until " + layout.escape(expiry) + ". Need help? Contact "
+                                + layout.escape(properties.getSupportContact()) + "."));
 
         return new EmailMessage(candidate.getEmail(), candidate.getName(), kind.subject(), text, html);
     }
 
+    /** Optional is worth saying; required is the default and needs no label. */
     private String htmlDocumentRow(RequiredDocument rd) {
-        String badge = rd.isMandatory()
-                ? "<span style=\"color:#174F96;font-weight:600\">required</span>"
-                : "<span style=\"color:#8792a8\">optional</span>";
-        return "<tr><td style=\"padding:5px 0\">" + rd.displayName() + "</td>"
-                + "<td style=\"padding:5px 0;text-align:right\">" + badge + "</td></tr>";
+        return layout.escape(rd.displayName())
+                + (rd.isMandatory() ? "" : " <span style=\"color:#8b95a8\">(optional)</span>");
     }
 }

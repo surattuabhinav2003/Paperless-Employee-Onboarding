@@ -15,6 +15,16 @@ public class AzureAdProperties {
 
     private String tenantId = "";
     private String clientId = "";
+
+    /**
+     * Only needed to send mail as a mailbox in the tenant, via Graph.
+     *
+     * <p>Sign-in does not use it and never should: the browser proves who it is
+     * with PKCE, and this server verifies the resulting token against the
+     * tenant's public keys. A secret is required here because sending as a
+     * mailbox is the application acting on its own behalf, with no user present.
+     */
+    private String clientSecret = "";
     private List<String> allowedHrEmails = List.of();
     private boolean autoProvision = true;
     private String defaultJobTitle = "HR";
@@ -63,6 +73,19 @@ public class AzureAdProperties {
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
+    }
+
+    /** The token endpoint for this tenant, used for client-credentials flow. */
+    public String tokenUri() {
+        return "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
     }
 
     public List<String> getAllowedHrEmails() {

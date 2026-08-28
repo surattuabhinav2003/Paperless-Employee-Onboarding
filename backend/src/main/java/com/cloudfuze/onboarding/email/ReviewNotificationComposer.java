@@ -22,8 +22,11 @@ public class ReviewNotificationComposer {
 
     private final EmailProperties properties;
 
-    public ReviewNotificationComposer(EmailProperties properties) {
+    private final MailLayout layout;
+
+    public ReviewNotificationComposer(EmailProperties properties, MailLayout layout) {
         this.properties = properties;
+        this.layout = layout;
     }
 
     /** Everything approved - the candidate can move on to their offer letter. */
@@ -48,21 +51,19 @@ public class ReviewNotificationComposer {
                 Neutara People Operations
                 """.formatted(candidate.getName(), portalUrl, properties.getSupportContact());
 
-        String html = shell(
+        String html = layout.page(
+                "Nothing more to upload - your offer letter is the next step.",
+                "Document review",
                 "Your documents are approved",
-                "#1c8a5c",
-                """
-                <p style="font-size:14px;color:#46536e;line-height:1.6">Hi %s,</p>
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  Good news - HR has reviewed and <b style="color:#1c8a5c">approved all of your
-                  documents</b>. There is nothing more for you to upload.
-                </p>
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  Your offer letter is the next step. We will email you as soon as it is ready,
-                  and you will be able to review and accept it from your onboarding portal.
-                </p>
-                %s
-                """.formatted(candidate.getName(), button(portalUrl, "Open my portal")));
+                layout.p("Hi " + layout.escape(candidate.getName()) + ",")
+                        + layout.p("HR has reviewed everything you sent and approved it. There is nothing "
+                                + "more for you to upload.")
+                        + layout.p("Your offer letter is the next step. We will email you as soon as it is "
+                                + "ready to read and sign.")
+                        + layout.button(portalUrl, "Open my portal")
+                        + layout.fallbackLink(portalUrl)
+                        + layout.note("Any questions? Reply to this email or contact "
+                                + layout.escape(properties.getSupportContact()) + "."));
 
         return new EmailMessage(candidate.getEmail(), candidate.getName(), subject, text, html);
     }
@@ -103,70 +104,72 @@ public class ReviewNotificationComposer {
                 """.formatted(candidate.getName(), n == 1 ? "1 document" : n + " documents",
                 textList, n == 1 ? "" : "s", portalUrl, properties.getSupportContact());
 
-        String htmlList = rejected.stream()
-                .map(d -> """
-                        <li style="margin-bottom:10px">
-                          <span style="font-weight:600;color:#0b1533">%s</span>%s
-                        </li>
-                        """.formatted(
-                        d.getDocumentType().getLabel(),
-                        d.getRejectReason() == null ? ""
-                                : "<div style=\"font-size:13px;color:#8a5a12;margin-top:2px\">Reason: "
-                                  + escape(d.getRejectReason()) + "</div>"))
-                .collect(Collectors.joining());
+        String htmlList = layout.list(rejected.stream()
+                .map(d -> layout.strong(d.getDocumentType().getLabel())
+                        + (d.getRejectReason() == null ? ""
+                        : "<br /><span style=\"color:#8b95a8\">" + layout.escape(d.getRejectReason()) + "</span>"))
+                .toArray(String[]::new));
 
-        String html = shell(
-                n == 1 ? "1 document needs re-uploading" : n + " documents need re-uploading",
-                "#b57912",
-                """
-                <p style="font-size:14px;color:#46536e;line-height:1.6">Hi %s,</p>
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  HR has reviewed your documents and needs the following re-uploaded before
-                  your onboarding can continue:
-                </p>
-                <ul style="font-size:14px;color:#46536e;line-height:1.6;padding-left:18px">%s</ul>
-                <p style="font-size:14px;color:#46536e;line-height:1.6">
-                  Open your portal to upload a new copy. Once you do, it goes straight back to
-                  HR - there is nothing else to submit.
-                </p>
-                %s
-                """.formatted(candidate.getName(), htmlList, button(portalUrl, "Re-upload my document"
-                        + (n == 1 ? "" : "s"))));
+        String html = layout.page(
+                n == 1 ? "One document needs a fresh copy before onboarding can continue."
+                        : n + " documents need a fresh copy before onboarding can continue.",
+                "Document review",
+                n == 1 ? "One document needs re-uploading" : n + " documents need re-uploading",
+                layout.p("Hi " + layout.escape(candidate.getName()) + ",")
+                        + layout.p("HR has reviewed your documents. These ones need a fresh copy before "
+                                + "your onboarding can continue:")
+                        + layout.panel(htmlList)
+                        + layout.p("Open your portal to upload a new copy. It goes straight back to HR - "
+                                + "there is nothing else to submit.")
+                        + layout.button(portalUrl, n == 1 ? "Re-upload my document" : "Re-upload my documents")
+                        + layout.fallbackLink(portalUrl)
+                        + layout.note("Any questions? Reply to this email or contact "
+                                + layout.escape(properties.getSupportContact()) + "."));
 
         return new EmailMessage(candidate.getEmail(), candidate.getName(), subject, text, html);
     }
 
-    private String shell(String heading, String accent, String body) {
-        return """
-                <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f6fb;padding:32px">
-                  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e9f5">
-                    <div style="background:#174F96;padding:24px 28px;color:#ffffff">
-                      <div style="font-size:20px;font-weight:600;letter-spacing:-0.2px">Neutara</div>
-                      <div style="font-size:13px;opacity:0.85;margin-top:2px">People Operations &middot; Onboarding</div>
-                    </div>
-                    <div style="padding:26px 28px">
-                      <div style="font-size:17px;font-weight:600;color:%s;margin-bottom:14px">%s</div>
-                      %s
-                      <p style="font-size:12.5px;color:#9aa5bd;line-height:1.6;margin-top:22px">
-                        This link is personal to you. Neutara will never ask for your password or
-                        payment details during onboarding.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                """.formatted(accent, heading, body);
-    }
+    /**
+     * HR has released the offer letter, and the candidate can sign it.
+     *
+     * <p>The link goes straight to the signing page rather than the portal front
+     * door: this mail exists to get one thing done, and every extra click
+     * between it and the signature is a chance to put it off. The token in the
+     * link is the same credential the rest of the portal uses, so nothing new is
+     * exposed by pointing deeper into it.
+     */
+    public EmailMessage offerReady(Candidate candidate, String offerUrl) {
+        String subject = "Your offer letter is ready to sign";
 
-    private String button(String url, String label) {
-        return """
-                <p style="margin:22px 0">
-                  <a href="%s" style="display:inline-block;background:#174F96;color:#ffffff;
-                     text-decoration:none;font-size:14px;font-weight:600;padding:11px 22px;border-radius:8px">%s</a>
-                </p>
-                """.formatted(url, label);
-    }
+        String text = """
+                Hi %s,
 
-    private String escape(String value) {
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+                Your offer letter is ready. You can read it and sign it here:
+
+                %s
+
+                The letter opens in your onboarding portal, where you can sign by drawing,
+                typing or uploading your signature. A signed copy is saved to your record
+                as soon as you are done.
+
+                If you have any questions before signing, reply to this email or contact %s.
+
+                Neutara People Operations
+                """.formatted(candidate.getName(), offerUrl, properties.getSupportContact());
+
+        String html = layout.page(
+                "Read it, sign it, and a signed copy is filed for you.",
+                "Offer letter",
+                "Your offer letter is ready",
+                layout.p("Hi " + layout.escape(candidate.getName()) + ",")
+                        + layout.p("Your offer letter is ready to read and sign. You can sign by drawing, "
+                                + "typing or uploading your signature, and a signed copy is saved to your "
+                                + "record as soon as you are done.")
+                        + layout.button(offerUrl, "Read and sign my offer")
+                        + layout.fallbackLink(offerUrl)
+                        + layout.note("Any questions before you sign? Reply to this email or contact "
+                                + layout.escape(properties.getSupportContact()) + "."));
+
+        return new EmailMessage(candidate.getEmail(), candidate.getName(), subject, text, html);
     }
 }

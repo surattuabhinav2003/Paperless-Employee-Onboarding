@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Sends HR the three notifications worth interrupting them for.
+ * Sends HR the handful of notifications worth interrupting them for.
  *
  * <p>Every method is fire-and-forget: a notification that fails must never
  * break the thing it is reporting on. A candidate who has signed their offer
@@ -37,6 +37,13 @@ public class HrNotifier {
     public void candidateSubmitted(Candidate candidate, int documentCount) {
         send(() -> composer.candidateSubmitted(candidate, documentCount),
                 "candidate submitted", candidate.getEmail());
+    }
+
+    /** The candidate returned everything HR sent back, so the pack is theirs again. */
+    @Async
+    public void candidateResubmitted(Candidate candidate, int returnedCount) {
+        send(() -> composer.candidateResubmitted(candidate, returnedCount),
+                "documents re-sent", candidate.getEmail());
     }
 
     @Async

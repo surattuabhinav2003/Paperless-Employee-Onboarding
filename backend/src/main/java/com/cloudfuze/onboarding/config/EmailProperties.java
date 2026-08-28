@@ -25,7 +25,40 @@ public class EmailProperties {
 
     private String hrNotifyName = "Neutara HR";
 
+    /**
+     * Blind-copied on every email the portal sends, whoever it is addressed to.
+     *
+     * <p>So that one person holds the whole correspondence - invitations, review
+     * outcomes, offer letters, NDA + NOC requests and the HR notifications alike
+     * - rather than having to reconstruct it from the console. Blank turns it
+     * off, which is the default.
+     *
+     * <p>Blind, not carbon: a candidate reading their offer letter should not
+     * find a second address on it, and should certainly not be able to reply to
+     * all. The archive copy is for the company's records, not part of the
+     * conversation.
+     */
+    private String archiveAddress = "";
+
+    /**
+     * The mailbox Graph sends as, when the provider is {@code graph}.
+     *
+     * <p>Its Sent Items is where the copies land, so this is whoever should own
+     * the correspondence. Blank falls back to the from-address.
+     */
+    private String graphSender = "";
+
     public boolean hrNotificationsEnabled() {
         return hrNotifyAddress != null && !hrNotifyAddress.isBlank();
+    }
+
+    /** Whether a copy of every message should be filed with someone. */
+    public boolean archiveEnabled() {
+        return archiveAddress != null && !archiveAddress.isBlank();
+    }
+
+    /** The mailbox to send as, falling back to whoever the mail claims to be from. */
+    public String resolvedGraphSender() {
+        return graphSender == null || graphSender.isBlank() ? fromAddress : graphSender.trim();
     }
 }

@@ -22,8 +22,11 @@ public class NocMailComposer {
 
     private final EmailProperties properties;
 
-    public NocMailComposer(EmailProperties properties) {
+    private final MailLayout layout;
+
+    public NocMailComposer(EmailProperties properties, MailLayout layout) {
         this.properties = properties;
+        this.layout = layout;
     }
 
     public EmailMessage compose(NocPacket packet, String signingUrl, Instant expiresAt) {
@@ -57,39 +60,21 @@ public class NocMailComposer {
                 """.formatted(packet.getRecipientName(), signingUrl, packet.getPageCount(),
                 EXPIRY.format(expiresAt), properties.getSupportContact());
 
-        String html = """
-                <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f6fb;padding:32px">
-                  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e9f5">
-                    <div style="background:#174F96;padding:24px 28px;color:#ffffff">
-                      <div style="font-size:20px;font-weight:600;letter-spacing:-0.2px">Neutara</div>
-                      <div style="font-size:13px;opacity:0.85;margin-top:2px">People Operations &middot; Documents</div>
-                    </div>
-                    <div style="padding:26px 28px">
-                      <div style="font-size:17px;font-weight:600;color:#174F96;margin-bottom:14px">
-                        Please sign your %s
-                      </div>
-                      <p style="font-size:14px;color:#46536e;line-height:1.6">Hi %s,</p>
-                      <p style="font-size:14px;color:#46536e;line-height:1.6">
-                        Your NDA and NOC have been <b>combined into a single document</b>, so you only
-                        need to go through it once - %d page(s) in total.
-                      </p>
-                      <p style="margin:22px 0">
-                        <a href="%s" style="display:inline-block;background:#174F96;color:#ffffff;
-                           text-decoration:none;font-size:14px;font-weight:600;padding:11px 22px;border-radius:8px">Review and sign</a>
-                      </p>
-                      <p style="font-size:13.5px;color:#46536e;line-height:1.7">
-                        Fill in every highlighted field, review what you entered, then submit.
-                        Your signed copy is available to download immediately afterwards.
-                      </p>
-                      <p style="font-size:12.5px;color:#9aa5bd;line-height:1.6;margin-top:22px">
-                        This link is personal to you and stays valid until %s. Neutara will never ask
-                        for your password or payment details.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                """.formatted(escape(what), escape(packet.getRecipientName()), packet.getPageCount(),
-                signingUrl, EXPIRY.format(expiresAt));
+        String html = layout.page(
+                "Your NDA and NOC are combined into one document - sign both in one pass.",
+                "For signature",
+                "Please sign your " + what,
+                layout.p("Hi " + layout.escape(packet.getRecipientName()) + ",")
+                        + layout.p("Your NDA and NOC have been combined into "
+                                + layout.strong("a single document") + ", so you only need to go through "
+                                + "it once - " + packet.getPageCount() + " page"
+                                + (packet.getPageCount() == 1 ? "" : "s") + " in total.")
+                        + layout.button(signingUrl, "Review and sign")
+                        + layout.fallbackLink(signingUrl)
+                        + layout.p("Fill in every highlighted field, review what you entered, then submit. "
+                                + "Your signed copy is available to download straight afterwards.")
+                        + layout.note("This link is personal to you and stays valid until "
+                                + layout.escape(EXPIRY.format(expiresAt)) + "."));
 
         return new EmailMessage(packet.getRecipientEmail(), packet.getRecipientName(), subject, text, html);
     }

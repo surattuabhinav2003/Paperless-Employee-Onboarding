@@ -2,6 +2,7 @@ package com.cloudfuze.onboarding.service;
 
 import com.cloudfuze.onboarding.audit.AuditService;
 import com.cloudfuze.onboarding.dto.DocumentDto;
+import com.cloudfuze.onboarding.dto.DocumentProgressDto;
 import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.exception.FileValidationException;
 import com.cloudfuze.onboarding.exception.ResourceNotFoundException;
@@ -55,6 +56,7 @@ public class DocumentService {
     private final StageGuard stageGuard;
     private final AuditService auditService;
     private final OnboardingMapper mapper;
+    private final HrNotifier hrNotifier;
 
     private final DocumentCatalogService catalog;
 
@@ -66,6 +68,7 @@ public class DocumentService {
                           StageGuard stageGuard,
                           AuditService auditService,
                           OnboardingMapper mapper,
+                          HrNotifier hrNotifier,
                           DocumentCatalogService catalog) {
         this.candidateRepository = candidateRepository;
         this.documentRepository = documentRepository;
@@ -75,6 +78,7 @@ public class DocumentService {
         this.stageGuard = stageGuard;
         this.auditService = auditService;
         this.mapper = mapper;
+        this.hrNotifier = hrNotifier;
         this.catalog = catalog;
     }
 
@@ -221,7 +225,33 @@ public class DocumentService {
                 candidate.getEmail(), ipAddress, type.code(), metadata);
 
         log.info("Candidate {} uploaded {} (v{})", candidate.getEmail(), type.code(), document.getVersion());
+
+        notifyHrIfPackIsBack(candidate, isReupload);
+
         return document;
+    }
+
+    /**
+     * Tells HR when a pack they sent back has been made whole again.
+     *
+     * <p>Rejecting a document emails the candidate, but the return journey was
+     * silent - HR only found out by reopening the record on the off chance.
+     *
+     * <p>Two conditions, both deliberate. The pack must already be with HR:
+     * before submission a candidate swapping a file around is just working, and
+     * interrupting HR for it would be noise. And nothing may still be
+     * outstanding: if HR sent three documents back and one has returned,
+     * looking now is a wasted trip, so the mail waits until the last one lands.
+     */
+    private void notifyHrIfPackIsBack(Candidate candidate, boolean isReupload) {
+        if (!isReupload || !candidate.isSubmittedForReview()) {
+            return;
+        }
+        DocumentProgressDto progress = mapper.progress(candidate, documentsOf(candidate.getId()));
+        if (progress.rejected() > 0 || progress.missing() > 0) {
+            return;
+        }
+        hrNotifier.candidateResubmitted(candidate, progress.submitted());
     }
 
     /** HR verifies a single document; may complete the document stage. Returns the candidate id. */

@@ -4,6 +4,9 @@ import com.cloudfuze.onboarding.audit.AuditService;
 import com.cloudfuze.onboarding.dto.OfferDto;
 import com.cloudfuze.onboarding.dto.PortalOfferDto;
 import com.cloudfuze.onboarding.dto.OfferFieldDto;
+import com.cloudfuze.onboarding.email.EmailService;
+import com.cloudfuze.onboarding.email.ReviewNotificationComposer;
+import com.cloudfuze.onboarding.security.PortalTokenService;
 import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.exception.StorageException;
 import com.cloudfuze.onboarding.model.AuditEventType;
@@ -54,12 +57,18 @@ public class OfferService {
     private final AuditService auditService;
     private final OnboardingMapper mapper;
     private final OfferSigningService signingService;
+    private final PortalTokenService portalTokenService;
+    private final EmailService emailService;
+    private final ReviewNotificationComposer reviewComposer;
 
     public OfferService(OfferRepository offerRepository, CandidateRepository candidateRepository,
                         FileStorageService storageService, FileUploadValidator uploadValidator, DocumentConversionService conversionService,
                         HrNotifier hrNotifier,
                         StageGuard stageGuard, AuditService auditService, OnboardingMapper mapper,
-                        OfferSigningService signingService) {
+                        OfferSigningService signingService,
+                        PortalTokenService portalTokenService,
+                        EmailService emailService,
+                        ReviewNotificationComposer reviewComposer) {
         this.offerRepository = offerRepository;
         this.candidateRepository = candidateRepository;
         this.storageService = storageService;
@@ -70,6 +79,9 @@ public class OfferService {
         this.auditService = auditService;
         this.mapper = mapper;
         this.signingService = signingService;
+        this.portalTokenService = portalTokenService;
+        this.emailService = emailService;
+        this.reviewComposer = reviewComposer;
     }
 
     /** HR uploads (or replaces) the offer letter for a candidate. */
@@ -184,16 +196,61 @@ public class OfferService {
                     "Place at least one signature field on the offer letter before sending it.");
         }
 
+        /*
+         * Build the link before committing to anything. Sending was previously
+         * silent - the letter was marked SENT and the candidate was never told,
+         * so it sat unread until they happened to open the portal. An offer that
+         * nobody was told about has not really been sent.
+         */
+        String offerUrl = offerUrl(candidate);
+
         offer.setStatus(OfferStatus.SENT);
         offer.setSentAt(Instant.now());
         offerRepository.save(offer);
 
+        /*
+         * The email is the point of this operation, so a failure to deliver it
+         * fails the whole thing: the transaction rolls back, the letter stays a
+         * draft, and HR can try again. Marking it sent while the mail bounced
+         * would leave everyone waiting on the other.
+         */
+        try {
+            emailService.send(reviewComposer.offerReady(candidate, offerUrl));
+        } catch (RuntimeException e) {
+            log.error("Offer email to {} could not be delivered: {}", candidate.getEmail(), e.getMessage());
+            throw new BusinessRuleException("EMAIL_NOT_SENT",
+                    "The offer letter could not be emailed right now, so it has not been sent. "
+                            + "Please try again.");
+        }
+
         auditService.recordHrEvent(candidate.getId(), AuditEventType.OFFER_SENT, hrUser.getEmail(),
                 ipAddress, offer.getOriginalFilename(),
-                Map.of("visibleToCandidate", candidate.getStage().isAtLeast(Stage.DOCS_APPROVED)));
+                Map.of("visibleToCandidate", candidate.getStage().isAtLeast(Stage.DOCS_APPROVED),
+                        "emailedTo", candidate.getEmail()));
 
         log.info("Offer letter sent to {} by {}", candidate.getEmail(), hrUser.getEmail());
         return mapper.toOfferDto(offer, "/api/hr/candidates/" + candidate.getId() + "/offer/file");
+    }
+
+    /**
+     * The candidate's signing page, as an absolute URL.
+     *
+     * <p>An expired link is a hard stop rather than a degraded email: without a
+     * working token the candidate cannot open the letter at all, so telling them
+     * it is ready would only frustrate them. HR regenerates the link first.
+     */
+    private String offerUrl(Candidate candidate) {
+        if (!candidate.isTokenActive(Instant.now())) {
+            throw new BusinessRuleException("LINK_EXPIRED",
+                    "This candidate's onboarding link has expired, so they could not open the letter. "
+                            + "Generate a new link before sending the offer.");
+        }
+        return portalTokenService.decrypt(candidate.getInviteTokenCipher())
+                .map(portalTokenService::portalUrl)
+                .map(url -> url + "/offer")
+                .orElseThrow(() -> new BusinessRuleException("LINK_NOT_RECOVERABLE",
+                        "This candidate's link cannot be recovered to put in an email. "
+                                + "Generate a new one first."));
     }
 
     @Transactional(readOnly = true)

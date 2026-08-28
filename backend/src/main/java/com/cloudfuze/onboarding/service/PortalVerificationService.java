@@ -235,7 +235,11 @@ public class PortalVerificationService {
                 """.formatted(toName, code);
 
         try {
-            emailService.send(new EmailMessage(toAddress, toName, subject, text, html));
+            /* Never blind-copied. This code is the second factor proving the
+               candidate controls their own inbox; the portal link is already in
+               another email the archive recipient receives, so copying this one
+               too would hand them a working key to anyone's documents. */
+            emailService.send(new EmailMessage(toAddress, toName, subject, text, html).notArchivable());
         } catch (RuntimeException e) {
             // Never fail the request because mail is down; the candidate can resend.
             log.error("Could not send a verification code to {}", mask(toAddress), e);
