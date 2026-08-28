@@ -19,7 +19,7 @@
   color: #fff;
   background-image:
     radial-gradient(120% 45% at 50% 0%, rgba(18, 179, 170, 0.14) 0%, transparent 60%),
-    linear-gradient(172deg, var(--navy-900) 0%, var(--navy-800) 62%, #143a63 100%);
+    linear-gradient(172deg, var(--navy-900) 0%, var(--navy-800) 62%, #142963 100%);
 }
 
 .c-rail-top {
@@ -222,7 +222,7 @@
   gap: 16px;
   margin-bottom: 22px;
   padding: 22px 24px;
-  border: 1px solid #d9e3ef;
+  border: 1px solid #D9DFEF;
   border-radius: var(--radius-lg);
   background-image:
     radial-gradient(120% 180% at 100% -40%, rgba(18, 179, 170, 0.16) 0%, transparent 60%),
@@ -366,7 +366,7 @@
 }
 
 .c-fig--slate { border-color: #dde3ee; background: linear-gradient(160deg, #f4f6fb, #e9edf6); }
-.c-fig--blue  { border-color: #cddcfa; background: linear-gradient(160deg, #eaf1ff, #dfe9ff); }
+.c-fig--blue  { border-color: #CDD9FA; background: linear-gradient(160deg, #eaf1ff, #DFE8FF); }
 .c-fig--amber { border-color: #f2ddb6; background: linear-gradient(160deg, #fdf3e2, #fbe9cd); }
 .c-fig--teal  { border-color: #bde8e4; background: linear-gradient(160deg, #e4f8f6, #d5f2ef); }
 .c-fig--green { border-color: #bfe7d3; background: linear-gradient(160deg, #e6f7ee, #d7f1e4); }
@@ -378,7 +378,7 @@
 .c-fig--green .c-fig-n, .c-fig--green .c-fig-mark { color: var(--green-600); }
 
 .c-fig--slate .c-fig-l { color: var(--ink-600); }
-.c-fig--blue  .c-fig-l { color: #3a5599; }
+.c-fig--blue  .c-fig-l { color: #3A5399; }
 .c-fig--amber .c-fig-l { color: #8a6416; }
 .c-fig--teal  .c-fig-l { color: #0d7c76; }
 .c-fig--green .c-fig-l { color: #196f4c; }
@@ -506,7 +506,7 @@
   min-width: 15px;
   padding: 1px 5px;
   border-radius: var(--radius-pill);
-  background: #e3e9f6;
+  background: #E3E8F6;
   font-family: var(--display);
   font-size: 10.5px;
   font-weight: 600;
@@ -661,7 +661,7 @@
 .c-lrow--teal::before  { background: var(--teal-500); }
 .c-lrow--amber::before { background: var(--amber-500); }
 .c-lrow--red::before   { background: var(--rose-500); }
-.c-lrow--slate::before { background: #8fa0c4; }
+.c-lrow--slate::before { background: #8F9DC4; }
 
 /* ---- who ---- */
 
@@ -686,11 +686,11 @@
 
 /* Five on-brand gradients, picked deterministically from the name. Same person,
    same colour, every session - which is what makes a list scannable by face. */
-.c-ring--h0 { background-image: linear-gradient(140deg, #174f96, #3f7fc9); }
-.c-ring--h1 { background-image: linear-gradient(140deg, #123a86, #12b3aa); }
-.c-ring--h2 { background-image: linear-gradient(140deg, #1d63b8, #3fd6f1); }
+.c-ring--h0 { background-image: linear-gradient(140deg, #234297, #5B78C8); }
+.c-ring--h1 { background-image: linear-gradient(140deg, #123186, #12b3aa); }
+.c-ring--h2 { background-image: linear-gradient(140deg, #3054B5, #3fd6f1); }
 .c-ring--h3 { background-image: linear-gradient(140deg, #0f5e8f, #2f9fd8); }
-.c-ring--h4 { background-image: linear-gradient(140deg, #2a3f8f, #6f8ae0); }
+.c-ring--h4 { background-image: linear-gradient(140deg, #2A458F, #6F8DE0); }
 
 .c-lrow--green .c-ring { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--green-100); }
 .c-lrow--teal .c-ring  { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--teal-100); }
@@ -1095,7 +1095,7 @@
 .r-field:hover .r-copy,
 .r-copy:focus-visible { opacity: 1; }
 
-.r-copy:hover { background: #e2ebff; color: var(--blue-700); }
+.r-copy:hover { background: #E2EAFF; color: var(--blue-700); }
 .r-copy.is-done { opacity: 1; background: var(--green-100); color: var(--green-600); }
 .r-copy svg { width: 13px; height: 13px; }
 

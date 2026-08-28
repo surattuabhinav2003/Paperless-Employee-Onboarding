@@ -149,8 +149,8 @@ export function AddRequiredDocumentModal({ open, onClose, candidateId, documentT
                             className="mt-1.5 inline-flex items-center gap-1 rounded-[3px] border px-2 py-0.5
                               text-[11px] font-medium transition"
                             style={{
-                              borderColor: isOptional ? '#EBEBEB' : '#174F96',
-                              color: isOptional ? '#707070' : '#174F96',
+                              borderColor: isOptional ? '#EBEBEB' : '#234297',
+                              color: isOptional ? '#707070' : '#234297',
                             }}
                           >
                             {isOptional ? 'Optional' : 'Mandatory'}

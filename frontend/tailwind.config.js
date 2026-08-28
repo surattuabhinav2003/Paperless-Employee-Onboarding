@@ -4,20 +4,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Neutara Technologies palette. The primary and the three lightest
-        // steps are sampled straight from the logo artwork, so the interface
-        // and the mark are the same blue rather than two that nearly match.
+        // Neutara Technologies palette. DEFAULT is #234297, sampled from the
+        // logo artwork itself, so the interface and the mark are the same blue
+        // rather than two that nearly match. The rest of the ramp holds that
+        // hue (224 degrees) and moves lightness, easing saturation off at the
+        // pale end so the tints read as paper rather than as blue.
         brand: {
-          DEFAULT: '#174F96',
-          deep: '#0D2F5C',
+          DEFAULT: '#234297',
+          deep: '#15285B',
           // The workhorse blue for interface chrome: the same hue as the brand
           // but light enough to sit on white without shouting.
-          mid: '#3F7FC9',
-          bright: '#1D63B8',
-          light: '#8BA7CA',
-          tint: '#E2E9F2',
-          wash: '#F1F4F8',
-          ink: '#0D2F5C',
+          mid: '#5B78C8',
+          bright: '#3054B5',
+          light: '#94A4D1',
+          tint: '#E6E9F2',
+          wash: '#F3F5F9',
+          ink: '#15285B',
         },
         // A real ink ramp. Pure #000 on white is harsh and reads cheap; a deep
         // blue-black is softer and pairs with the brand hue.
@@ -37,7 +39,7 @@ export default {
         },
         // Passive states - waiting on someone else, nothing for HR to do.
         slate: {
-          DEFAULT: '#8595BC',
+          DEFAULT: '#8594BC',
           tint: '#F1F3F9',
           line: '#DDE2EE',
           ink: '#586780',
@@ -51,7 +53,7 @@ export default {
         // for a 3px bar or a small icon but too loud across a panel, so large
         // surfaces and big numerals use these instead. Brand blue still leads.
         soft: {
-          blue: '#A8BEEA',
+          blue: '#A8BAEA',
           teal: '#6FD3CB',
           green: '#7FD8A6',
           sand: '#E8C79C',

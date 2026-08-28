@@ -139,7 +139,7 @@
 
 .dp-day:hover:not(:disabled) { background: var(--blue-050); color: var(--blue-700); }
 .dp-day.is-outside { color: var(--ink-300); }
-.dp-day:disabled { color: #cfd6e6; cursor: not-allowed; }
+.dp-day:disabled { color: #CFD5E6; cursor: not-allowed; }
 
 /* Today is outlined; the chosen day is filled. */
 .dp-day.is-today { box-shadow: inset 0 0 0 1px var(--blue-200); font-weight: 600; }

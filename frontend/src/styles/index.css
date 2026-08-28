@@ -11,7 +11,7 @@
  *
  * COLOUR - a deliberately small palette, but actually used:
  *   navy      the navigation rail and deep text
- *   blue      Neutara #174F96, the primary action and the anchor
+ *   blue      Neutara #234297, the primary action and the anchor
  *   teal      review / in progress
  *   amber     waiting on someone
  *   green     done
@@ -33,18 +33,20 @@
   --ink-300: #9aa5bd;
 
   /* ---- navy (the rail) - the brand blue carried down into a dark steel ---- */
-  --navy-900: #0a1c33;
-  --navy-800: #0e2949;
-  --navy-700: #133a66;
+  --navy-900: #0A1533;
+  --navy-800: #0E1E49;
+  --navy-700: #132966;
 
   /* ---- Neutara brand blue ----
      700 and the 200/100/050 tints are sampled from the logo artwork itself. */
-  --blue-700: #174f96;
-  --blue-600: #1d63b8;
-  --blue-500: #3f7fc9;
-  --blue-200: #c5d3e5;
-  --blue-100: #e2e9f2;
-  --blue-050: #f1f4f8;
+  /* #234297 is the logo blue itself; the ramp holds its hue and moves
+     lightness. 9.1:1 on white, so it is safe for body text as well as chrome. */
+  --blue-700: #234297;
+  --blue-600: #3054B5;
+  --blue-500: #5B78C8;
+  --blue-200: #CED4E6;
+  --blue-100: #E6E9F2;
+  --blue-050: #F3F5F9;
 
   /* ---- supporting hues ---- */
   --teal-600: #0f9a92;
@@ -312,7 +314,7 @@ b {
 .t-blue  { background: var(--blue-100); border-color: var(--blue-200); color: var(--blue-700); }
 .t-blue  i { background: var(--blue-500); }
 .t-slate { background: #eef1f6; border-color: #dae2ec; color: #4b5a78; }
-.t-slate i { background: #8fa0c4; }
+.t-slate i { background: #8F9DC4; }
 .t-teal  { background: var(--teal-100); border-color: #bfe9e5; color: var(--teal-600); }
 .t-teal  i { background: var(--teal-500); }
 .t-amber { background: var(--amber-100); border-color: #f3ddb4; color: var(--amber-600); }
@@ -325,7 +327,7 @@ b {
 /* Bare dots, for timelines and legends. */
 .d-grey  { background: var(--ink-300); }
 .d-blue  { background: var(--blue-500); }
-.d-slate { background: #8fa0c4; }
+.d-slate { background: #8F9DC4; }
 .d-teal  { background: var(--teal-500); }
 .d-amber { background: var(--amber-500); }
 .d-green { background: var(--green-500); }

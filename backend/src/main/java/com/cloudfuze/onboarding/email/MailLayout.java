@@ -37,7 +37,7 @@ public class MailLayout {
     /* Deep navy carries the brand; the greys are warm rather than blue so the
        page reads as paper. Kept here as constants because an email cannot use
        CSS variables - every value has to be inlined at the point of use. */
-    private static final String NAVY = "#174F96";
+    private static final String NAVY = "#234297";
     private static final String INK = "#0f1b33";
     private static final String BODY = "#4a5568";
     private static final String MUTED = "#8b95a8";
@@ -162,7 +162,7 @@ public class MailLayout {
      */
     public String fallbackLink(String url) {
         return """
-                <p style="margin:0 0 4px;font-family:%s;font-size:12px;line-height:20px;color:%s">
+                <p style="margin:0 0 22px;font-family:%s;font-size:12px;line-height:20px;color:%s">
                   Or paste this into your browser:<br />
                   <span style="color:%s;word-break:break-all">%s</span>
                 </p>

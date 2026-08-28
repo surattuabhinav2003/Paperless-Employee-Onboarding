@@ -5,8 +5,8 @@
  * express: an animated gradient *angle* (@property), a border drawn by mask
  * compositing, light that follows the pointer, real film grain, and 3D drift.
  *
- * Palette is Neutara: blue #174F96 (sampled from the logo), deep #0D2F5C, accent blue
- * #3F7FC9, teal #14CFC3. Poppins, 600 is the heaviest weight used.
+ * Palette is Neutara: blue #234297 (sampled from the logo), deep #15285B, accent blue
+ * #5B78C8, teal #14CFC3. Poppins, 600 is the heaviest weight used.
  * ========================================================================== */
 
 /* Registering the angle is what makes a conic-gradient animatable at all -
@@ -18,11 +18,11 @@
 }
 
 .lg {
-  --ink: #0d2f5c;
-  --ink-deep: #06203f;
-  --blue: #174f96;
-  --blue-bright: #1d63b8;
-  --blue-light: #3f7fc9;
+  --ink: #15285B;
+  --ink-deep: #06153F;
+  --blue: #234297;
+  --blue-bright: #3054B5;
+  --blue-light: #5B78C8;
   --teal: #14cfc3;
   --paper: #ffffff;
 
@@ -39,7 +39,7 @@
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(120% 90% at 50% 0%, #14508f 0%, transparent 55%),
+    radial-gradient(120% 90% at 50% 0%, #14358F 0%, transparent 55%),
     linear-gradient(175deg, var(--ink) 0%, var(--ink-deep) 100%);
   color: var(--paper);
 }
