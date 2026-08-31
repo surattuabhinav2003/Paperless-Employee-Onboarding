@@ -1,5 +1,6 @@
 package com.cloudfuze.onboarding.service;
 
+import com.cloudfuze.onboarding.audit.AuditService;
 import com.cloudfuze.onboarding.config.AppProperties;
 import com.cloudfuze.onboarding.dto.NocPacketDto;
 import com.cloudfuze.onboarding.dto.NocRecipientViewDto;
@@ -12,6 +13,8 @@ import com.cloudfuze.onboarding.exception.BusinessRuleException;
 import com.cloudfuze.onboarding.exception.InvalidPortalTokenException;
 import com.cloudfuze.onboarding.exception.PortalTokenExpiredException;
 import com.cloudfuze.onboarding.exception.ResourceNotFoundException;
+import com.cloudfuze.onboarding.model.ActorType;
+import com.cloudfuze.onboarding.model.AuditEventType;
 import com.cloudfuze.onboarding.model.NocPacket;
 import com.cloudfuze.onboarding.model.NocStatus;
 import com.cloudfuze.onboarding.model.OfferField;
@@ -62,13 +65,15 @@ public class NocService {
     private final PortalTokenService portalTokenService;
     private final AppProperties appProperties;
     private final HrNotifier hrNotifier;
+    private final AuditService auditService;
 
     public NocService(NocPacketRepository repository, PdfMergeService mergeService,
                       DocumentConversionService conversionService,
                       OfferSigningService signingService, FileStorageService storageService,
                       FileUploadValidator uploadValidator, EmailService emailService,
                       NocMailComposer mailComposer, PortalTokenService portalTokenService,
-                      AppProperties appProperties, HrNotifier hrNotifier) {
+                      AppProperties appProperties, HrNotifier hrNotifier,
+                      AuditService auditService) {
         this.repository = repository;
         this.mergeService = mergeService;
         this.conversionService = conversionService;
@@ -80,6 +85,7 @@ public class NocService {
         this.portalTokenService = portalTokenService;
         this.appProperties = appProperties;
         this.hrNotifier = hrNotifier;
+        this.auditService = auditService;
     }
 
     // ---------------------------------------------------------------- HR side
@@ -224,15 +230,49 @@ public class NocService {
         return (packet.isSigned() ? "NDA-NOC-signed-" : "NDA-NOC-") + who + ".pdf";
     }
 
+    /**
+     * Removes a packet.
+     *
+     * <p>An unsigned one is a draft and anyone in HR may tidy it away. A signed
+     * one is the record itself, so only an administrator may - and they can,
+     * because a rule that a signed document can never be removed cannot honour
+     * a request to erase someone's data.
+     */
     @Transactional
-    public void delete(UUID id, HrPrincipal hrUser) {
+    public void delete(UUID id, HrPrincipal hrUser, String ipAddress) {
         NocPacket packet = require(id);
-        if (packet.isSigned()) {
+        if (packet.isSigned() && !hrUser.isAdmin()) {
             throw new BusinessRuleException("NOC_ALREADY_SIGNED",
-                    "This packet has been signed and forms part of the record, so it cannot be deleted.");
+                    "This packet has been signed and forms part of the record. An administrator "
+                            + "can remove it from Admin settings.");
         }
+
+        // Written first, while there is still a packet to describe. It carries no
+        // candidate, so it outlives the row it is about.
+        auditService.record(null, AuditEventType.NOC_DELETED, hrUser.getEmail(), ActorType.HR,
+                ipAddress, null, Map.of(
+                        "packetId", id.toString(),
+                        "recipientName", String.valueOf(packet.getRecipientName()),
+                        "recipientEmail", String.valueOf(packet.getRecipientEmail()),
+                        "wasSigned", packet.isSigned()));
+
+        safeDelete(packet.getStorageKey());
+        safeDelete(packet.getSignedStorageKey());
         repository.delete(packet);
-        log.info("HR {} deleted NOC packet {}", hrUser.getEmail(), id);
+        log.info("{} deleted {} NOC packet {}", hrUser.getEmail(),
+                packet.isSigned() ? "signed" : "draft", id);
+    }
+
+    /** A file already gone must not block the record going. */
+    private void safeDelete(String key) {
+        if (key == null || key.isBlank()) {
+            return;
+        }
+        try {
+            storageService.delete(key);
+        } catch (RuntimeException e) {
+            log.warn("Could not remove stored file {}: {}", key, e.getMessage());
+        }
     }
 
     // --------------------------------------------------------- recipient side

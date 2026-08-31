@@ -10,11 +10,15 @@ import com.cloudfuze.onboarding.dto.HrUserDto;
 import com.cloudfuze.onboarding.dto.UpdateCandidateFieldRequest;
 import com.cloudfuze.onboarding.model.CandidateField;
 import com.cloudfuze.onboarding.dto.UpdateHrRoleRequest;
+import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import com.cloudfuze.onboarding.util.RequestContext;
 import com.cloudfuze.onboarding.security.HrPrincipal;
 import com.cloudfuze.onboarding.service.CandidateFieldService;
 import com.cloudfuze.onboarding.service.CustomCandidateFieldService;
 import com.cloudfuze.onboarding.service.DocumentCatalogService;
 import com.cloudfuze.onboarding.service.HrUserAdminService;
+import com.cloudfuze.onboarding.service.RecordDeletionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,14 +50,17 @@ public class HrAdminController {
     private final CandidateFieldService fieldService;
     private final CustomCandidateFieldService customFieldService;
     private final DocumentCatalogService documentCatalog;
+    private final RecordDeletionService deletionService;
 
     public HrAdminController(HrUserAdminService userAdminService, CandidateFieldService fieldService,
                              CustomCandidateFieldService customFieldService,
-                             DocumentCatalogService documentCatalog) {
+                             DocumentCatalogService documentCatalog,
+                             RecordDeletionService deletionService) {
         this.userAdminService = userAdminService;
         this.fieldService = fieldService;
         this.customFieldService = customFieldService;
         this.documentCatalog = documentCatalog;
+        this.deletionService = deletionService;
     }
 
     @GetMapping("/users")
@@ -162,5 +169,35 @@ public class HrAdminController {
     public ResponseEntity<List<CustomDocumentTypeDto>> restoreDocumentType(
             @PathVariable UUID id, @AuthenticationPrincipal HrPrincipal actor) {
         return ResponseEntity.ok(documentCatalog.setArchived(id, false, actor));
+    }
+
+    /* ---------------------------------------------------------------------
+     * Permanent deletion. Administrator-only by the security rules on
+     * /api/hr/admin/**, and kept here rather than beside the records
+     * themselves: a delete control on every row is a delete control someone
+     * eventually presses by accident.
+     * ------------------------------------------------------------------- */
+
+    /** What removing this candidate would destroy, so the screen can say so first. */
+    @GetMapping("/candidates/{id}/deletion-preview")
+    public ResponseEntity<Map<String, Object>> deletionPreview(@PathVariable UUID id) {
+        return ResponseEntity.ok(deletionService.candidatePreview(id));
+    }
+
+    @DeleteMapping("/candidates/{id}")
+    public ResponseEntity<Void> deleteCandidate(@PathVariable UUID id,
+                                                @AuthenticationPrincipal HrPrincipal hrUser,
+                                                HttpServletRequest httpRequest) {
+        deletionService.deleteCandidate(id, hrUser, RequestContext.clientIp(httpRequest));
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Removes the offer letter only; the candidate and their documents stay. */
+    @DeleteMapping("/candidates/{id}/offer")
+    public ResponseEntity<Void> deleteOffer(@PathVariable UUID id,
+                                            @AuthenticationPrincipal HrPrincipal hrUser,
+                                            HttpServletRequest httpRequest) {
+        deletionService.deleteOffer(id, hrUser, RequestContext.clientIp(httpRequest));
+        return ResponseEntity.noContent().build();
     }
 }

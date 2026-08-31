@@ -107,8 +107,9 @@ public class HrNocController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id, @AuthenticationPrincipal HrPrincipal hrUser) {
-        nocService.delete(id, hrUser);
+    public ResponseEntity<Void> delete(@PathVariable UUID id, @AuthenticationPrincipal HrPrincipal hrUser,
+                                       HttpServletRequest httpRequest) {
+        nocService.delete(id, hrUser, RequestContext.clientIp(httpRequest));
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
+import { AdminDeletePanel } from './AdminDeletePanel'
 import { AdminDocumentTypesPanel } from './AdminDocumentTypesPanel'
 import { AdminFieldsPanel } from './AdminFieldsPanel'
 import { AdminUsersPanel } from './AdminUsersPanel'
@@ -16,6 +17,9 @@ const TABS = [
   { key: 'users', label: 'People & access' },
   { key: 'fields', label: 'Candidate detail fields' },
   { key: 'documents', label: 'Document types' },
+  // Last, and named for what it does. Destructive work belongs somewhere you
+  // have to go on purpose, not beside the records it destroys.
+  { key: 'delete', label: 'Delete records' },
 ]
 
 export function AdminPage() {
@@ -49,6 +53,7 @@ export function AdminPage() {
       {tab === 'users' && <AdminUsersPanel />}
       {tab === 'fields' && <AdminFieldsPanel />}
       {tab === 'documents' && <AdminDocumentTypesPanel />}
+      {tab === 'delete' && <AdminDeletePanel />}
     </>
   )
 }

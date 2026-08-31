@@ -16,6 +16,21 @@ function triggerDownload(objectUrl, filename) {
 
 /** Every HR API call in one place. Components never build URLs themselves. */
 export const hrService = {
+  /* ---- permanent deletion (administrators only) ---- */
+
+  async deletionPreview(candidateId) {
+    const { data } = await apiClient.get(`/hr/admin/candidates/${candidateId}/deletion-preview`)
+    return data
+  },
+
+  async deleteCandidate(candidateId) {
+    await apiClient.delete(`/hr/admin/candidates/${candidateId}`)
+  },
+
+  async deleteCandidateOffer(candidateId) {
+    await apiClient.delete(`/hr/admin/candidates/${candidateId}/offer`)
+  },
+
   async dashboardStats() {
     const { data } = await apiClient.get('/hr/dashboard/stats')
     return data

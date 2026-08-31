@@ -35,7 +35,16 @@ public enum AuditEventType {
     OFFER_SENT("offer_sent", "Offer letter sent to candidate"),
     OFFER_VIEWED("offer_viewed", "Offer letter viewed"),
     OFFER_ACCEPTED("offer_accepted", "Offer letter accepted"),
-    ONBOARDING_COMPLETED("onboarding_completed", "Onboarding completed");
+    ONBOARDING_COMPLETED("onboarding_completed", "Onboarding completed"),
+
+    /*
+     * Deletions. Recorded against no candidate, because the candidate is the
+     * thing being removed - the entry has to outlive the record it describes,
+     * or removing someone would also remove the evidence that anyone did.
+     */
+    CANDIDATE_DELETED("candidate_deleted", "Candidate permanently deleted"),
+    OFFER_DELETED("offer_deleted", "Offer letter permanently deleted"),
+    NOC_DELETED("noc_deleted", "NDA + NOC permanently deleted");
 
     private final String code;
     private final String label;
