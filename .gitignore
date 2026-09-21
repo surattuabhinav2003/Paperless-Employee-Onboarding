@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.deploy.example
 backend/src/main/resources/application-local.properties
 
 # --- uploaded documents (never commit candidate data) ---
